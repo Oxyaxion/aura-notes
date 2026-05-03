@@ -1,8 +1,11 @@
-# Aura Notes
+<div align="center">
+  <img src="icon.svg" alt="Aura Notes" width="96" />
+  <h1>Aura Notes</h1>
+  <p><em>A lightweight, fast, queryable, keyboard-oriented note-taking app with a minimal footprint.</em></p>
+  <img src="aura-notes.png" alt="Aura Notes screenshot" width="800" />
+</div>
 
-*A Lightweight, fast, queryable, personnal, keyboard-oriented note-taking with a minimal footprint.*
-
-![Aura Notes screenshot](aura-notes.png)
+<br />
 
 - Self-hosted, WYSIWYG editor, note-taking backed by plain `.md` files with frontmatter, no database, no lock-in.
 - Move your `storage/` folder anywhere, open notes in any editor.
