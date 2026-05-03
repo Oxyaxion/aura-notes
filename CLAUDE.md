@@ -62,7 +62,13 @@ cd frontend && npm run dev
 
 ### Storage layout
 
-Storage defaults to `../storage` relative to the `backend/` working directory. It is configurable via `--storage <path>` CLI flag or the `storage` key in `clef-note.toml` (CLI takes precedence). The `clef-note.toml` location is unaffected by `--storage`. Port `3000` is still hardcoded in `src/main.rs`.
+Storage defaults to `../storage` relative to the `backend/` working directory. It is configurable via `--storage <path>` CLI flag or the `storage` key in `clef-note.toml` (CLI takes precedence). The `clef-note.toml` location is unaffected by `--storage`.
+
+**CLI flags:**
+- `--storage <path>` — override notes storage directory
+- `--port <port>` — listening port (default: 3000)
+- `--config <path>` — path to `clef-note.toml`
+- `--hash-password <plaintext>` — print Argon2 hash and exit
 
 ```
 storage/
@@ -100,6 +106,8 @@ All endpoints except `POST /auth/login` require `Authorization: Bearer <token>` 
 - `POST /auth/login` — **public** — `{password}` → `{token}` (Argon2 verification)
 - `POST /auth/logout` — invalidate session token
 - `GET /api/key` — return configured API key (masked display in Settings)
+- `GET /api/settings` — return persisted UI settings JSON from `storage/settings.json`
+- `PUT /api/settings` — overwrite UI settings JSON
 
 At startup the backend fully indexes all `.md` files into a `HashMap<String, NoteRow>` (blocking until complete). On every PUT/PATCH/DELETE the in-memory index is updated immediately and the backlink index is rebuilt via a `walkdir` scan — not incremental.
 
@@ -121,6 +129,7 @@ Parsed entirely in `src/db.rs::parse_query`. Tokens are whitespace-separated.
 - `rating:n` → exact integer match
 - `alias:val` → exact match on aliases list
 - `pinned:true/false` → boolean
+- `depth:n` → exact match on directory depth (number of `/` in the note name path)
 - `locked:true/false` → boolean (note is read-only when `true`)
 - `priority:val` → exact match (`high`, `medium`, `low`); `order by priority` uses semantic order (high → medium → low)
 
@@ -134,7 +143,7 @@ Parsed entirely in `src/db.rs::parse_query`. Tokens are whitespace-separated.
 
 **Display** (frontend-only, stripped before API call):
 - `print <fields>` — controls which columns render in the query block. Always placed last in the query string.
-- Valid print fields: `name` (last path segment only), `path` (full path), `title`, `tags`, `date`, `status`, `area`, `author`, `due`, `rating`, `url`
+- Valid print fields: `name` (last path segment only), `path` (full path), `title`, `tags`, `date`, `status`, `area`, `author`, `due`, `rating`, `url`, `priority`, `project`
 - `name` vs `path`: `print name` shows only the filename (`Note`); `print path` shows the full path (`Dev/Axum/Note`)
 
 **NOT semantics:** `NOT` predicates are **global exclusions** — applied after OR-group evaluation. `A OR B AND NOT C` means `(A OR B) AND NOT C`, not `A OR (B AND NOT C)`. This ensures `NOT` always excludes from all results, regardless of where it appears in the query.
@@ -174,6 +183,7 @@ Setting `locked: true` in a note's frontmatter makes it read-only:
 - `src/query.rs` — HTTP handlers for search/tags/aliases/field-values; calls into `db.rs` for actual querying
 - `src/openapi.rs` — `GET /api/openapi.json` handler, full OpenAPI 3.0 spec
 - `src/drawings.rs` — Excalidraw drawing CRUD + SVG preview handlers
+- `src/settings.rs` — `GET /api/settings` + `PUT /api/settings` handlers; persists UI settings JSON to `storage/settings.json`
 - `src/frontend.rs` — embedded static asset serving via `rust-embed`; falls back to `index.html` for SPA routing
 
 ### Frontend structure
@@ -247,3 +257,16 @@ password = "$argon2id$v=19$..."
 - Ctrl+K opens the global command palette
 - Mobile: sidebar is a CSS drawer, command palette becomes a bottom sheet
 - `type: index` notes render in dashboard mode: centered H1, query blocks in 2-column grid
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+K` | Open command palette |
+| `Ctrl+Shift+H` | Go to home note (configured in Settings) |
+| `Ctrl+Shift+P` | Navigate back in history |
+| `Ctrl+Shift+N` | Navigate forward in history |
+| `Ctrl+S` | Save note |
+| `/` | Open slash-command menu |
+| `[[` | Start WikiLink autocomplete |
+| `Ctrl+Enter` | Exit blockquote (inserts paragraph after)
