@@ -1,7 +1,7 @@
 <div align="center">
   <img src="clef-note-logo.png" alt="Clef Note" width="200" />
   <h1>Clef Note</h1>
-  <p><em>A lightweight, fast, queryable, keyboard-oriented note-taking app with a minimal footprint.</em></p>
+  <p><em>A lightweight, fast, queryable, keyboard-oriented markdonw note-taking app with a minimal footprint.</em></p>
   <img src="clef-note.png" alt="Clef Note screenshot" width="800" />
 </div>
 
@@ -10,7 +10,7 @@
 - Self-hosted, WYSIWYG editor, note-taking backed by plain `.md` files with frontmatter, no database, no lock-in.
 - Move your `storage/` folder anywhere, open notes in any editor.
 - One binary, ~15 MB, no Node.js in production.
-- All the modern features : Copy Paste images / Excalidraw ...
+- All the modern features : Export notes / Copy Paste images / Excalidraw ...
 - Responsive for smartphone.
 - Minimal UI.
 - Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}`. Results update in real time, a really cool feature.
