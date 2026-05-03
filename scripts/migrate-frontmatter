@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""
+migrate-frontmatter — rewrite frontmatter field names in .md files.
+
+Mappings applied:
+  displayName  → title      (if no title already)
+  name         → title      (if no title already, and field looks like a title)
+  lastModified → date        (if no date already)
+  scheduled    → due         (if no due already)
+  draft: true  → status: draft  (if no status already)
+  customer     → project     (if no project already)
+
+Usage:
+  ./migrate-frontmatter [--dry-run] [--dir <path>]
+
+Options:
+  --dry-run     Print what would change without writing files
+  --dir <path>  Directory to scan (default: ../storage/notes relative to this script)
+"""
+
+import argparse
+import os
+import re
+import sys
+
+
+FRONTMATTER_RE = re.compile(r"^---\n(.*?\n)---\n", re.DOTALL)
+
+MAPPINGS = [
+    # (old_key, new_key, only_if_new_absent)
+    ("displayName", "title", True),
+    ("name",        "title", True),
+    ("lastModified","date",  True),
+    ("scheduled",   "due",   True),
+    ("customer",    "project", True),
+]
+
+
+def parse_frontmatter_lines(fm_text):
+    """Return a list of (raw_line, key_or_None) tuples preserving order."""
+    lines = fm_text.split("\n")
+    result = []
+    for line in lines:
+        m = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):", line)
+        result.append((line, m.group(1) if m else None))
+    return result
+
+
+def migrate_content(content):
+    """Return (new_content, list_of_changes) or (content, []) if nothing to do."""
+    m = FRONTMATTER_RE.match(content)
+    if not m:
+        return content, []
+
+    fm_text = m.group(1)
+    body_after = content[m.end():]
+
+    lines_meta = parse_frontmatter_lines(fm_text)
+    present_keys = {key for _, key in lines_meta if key}
+
+    changes = []
+    new_lines = []
+
+    # Handle draft: true → status: draft
+    has_draft_true = False
+    for raw, key in lines_meta:
+        if key == "draft" and re.match(r"^draft:\s*true\s*$", raw):
+            has_draft_true = True
+            break
+
+    skip_keys = set()
+
+    for raw, key in lines_meta:
+        transformed = raw
+
+        # draft: true → skip (replaced below by status: draft)
+        if key == "draft" and has_draft_true and "status" not in present_keys:
+            skip_keys.add("_draft_replaced")
+            changes.append("draft: true  →  status: draft")
+            new_lines.append(("status: draft", "status"))
+            continue
+
+        # Rename mappings
+        renamed = False
+        for old_key, new_key, only_if_absent in MAPPINGS:
+            if key == old_key:
+                if only_if_absent and new_key in present_keys:
+                    break  # keep original, target already exists
+                transformed = new_key + raw[len(old_key):]
+                changes.append(f"{old_key}  →  {new_key}")
+                renamed = True
+                break
+
+        new_lines.append((transformed, key if not renamed else None))
+
+    if not changes:
+        return content, []
+
+    new_fm = "\n".join(line for line, _ in new_lines)
+    new_content = f"---\n{new_fm}---\n{body_after}"
+    return new_content, changes
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Migrate frontmatter field names in .md files")
+    parser.add_argument("--dry-run", action="store_true", help="Print changes without writing")
+    parser.add_argument("--dir", default=None, help="Directory to scan")
+    args = parser.parse_args()
+
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    notes_dir = args.dir or os.path.join(script_dir, "..", "storage", "notes")
+    notes_dir = os.path.realpath(notes_dir)
+
+    if not os.path.isdir(notes_dir):
+        print(f"Error: directory not found: {notes_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    total_changed = 0
+
+    for root, _dirs, files in os.walk(notes_dir):
+        for fname in sorted(files):
+            if not fname.endswith(".md"):
+                continue
+            path = os.path.join(root, fname)
+            rel = os.path.relpath(path, notes_dir)
+
+            with open(path, "r", encoding="utf-8") as f:
+                original = f.read()
+
+            new_content, changes = migrate_content(original)
+
+            if not changes:
+                continue
+
+            total_changed += 1
+            print(f"\033[1m{rel}\033[0m")
+            for c in changes:
+                print(f"  {c}")
+
+            if not args.dry_run:
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+
+    if total_changed == 0:
+        print("Nothing to migrate.")
+    elif args.dry_run:
+        print(f"\n{total_changed} file(s) would be updated. Run without --dry-run to apply.")
+    else:
+        print(f"\n{total_changed} file(s) updated.")
+
+
+if __name__ == "__main__":
+    main()

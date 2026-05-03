@@ -1,0 +1,25 @@
+[package]
+name = "aura-notes-backend"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "aura-notes"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8", features = ["multipart"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors"] }
+rust-embed = "8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+walkdir = "2"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+gray_matter = "0.3"
+toml = "1"
+argon2 = { version = "0.5", features = ["password-hash"] }
+rand_core = { version = "0.6", features = ["getrandom"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

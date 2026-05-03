@@ -1,0 +1,491 @@
+<script lang="ts">
+	import { untrack } from 'svelte';
+	import type { NoteMeta } from './api';
+
+	interface Props {
+		notes: NoteMeta[];
+		selected: string | null;
+		vaultName?: string;
+		mobileOpen?: boolean;
+		startCreating?: boolean;
+		onSelect: (name: string) => void;
+		onNew: (name: string) => void;
+		onMobileClose?: () => void;
+		onCreateStarted?: () => void;
+	}
+
+	let { notes, selected, vaultName = 'Notes', mobileOpen = false, startCreating = false, onSelect, onNew, onMobileClose, onCreateStarted }: Props = $props();
+
+	$effect(() => {
+		if (startCreating) {
+			creating = true;
+			onCreateStarted?.();
+		}
+	});
+
+	let newName = $state('');
+	let creating = $state(false);
+	let collapsed = $state(
+		typeof localStorage !== 'undefined' && localStorage.getItem('aura-sidebar-collapsed') === 'true'
+	);
+
+	function toggleCollapse() {
+		collapsed = !collapsed;
+		localStorage.setItem('aura-sidebar-collapsed', String(collapsed));
+	}
+
+	// --- Tree building ---
+
+	type TreeNode =
+		| { kind: 'note'; path: string; label: string; pinned: boolean; is_index: boolean }
+		| { kind: 'folder'; path: string; label: string; children: TreeNode[] };
+
+	function sortLevel(nodes: TreeNode[]): TreeNode[] {
+		const pinned = nodes.filter(n => n.kind === 'note' && n.pinned && !n.is_index);
+		const folders = nodes.filter(n => n.kind === 'folder');
+		const unpinned = nodes.filter(n => n.kind === 'note' && !n.pinned && !n.is_index);
+		for (const f of folders) {
+			if (f.kind === 'folder') f.children = sortLevel(f.children);
+		}
+		return [...pinned, ...folders, ...unpinned];
+	}
+
+	function buildTree(noteList: NoteMeta[]): TreeNode[] {
+		const root: TreeNode[] = [];
+
+		for (const note of noteList) {
+			const parts = note.name.split('/');
+			let current = root;
+			for (let i = 0; i < parts.length; i++) {
+				const part = parts[i];
+				const isLast = i === parts.length - 1;
+				if (isLast) {
+					current.push({ kind: 'note', path: note.name, label: part, pinned: note.pinned ?? false, is_index: note.is_index ?? false });
+				} else {
+					let folder = current.find(
+						(n): n is Extract<TreeNode, { kind: 'folder' }> =>
+							n.kind === 'folder' && n.label === part
+					);
+					if (!folder) {
+						const folderPath = parts.slice(0, i + 1).join('/');
+						folder = { kind: 'folder', path: folderPath, label: part, children: [] };
+						current.push(folder);
+					}
+					current = folder.children;
+				}
+			}
+		}
+
+		return sortLevel(root);
+	}
+
+	let openFolders = $state<Set<string>>(new Set());
+
+	type DisplayItem =
+		| { kind: 'note'; path: string; label: string; depth: number; pinned: boolean; is_index: boolean }
+		| { kind: 'folder'; path: string; label: string; depth: number; open: boolean };
+
+	function flatten(nodes: TreeNode[], depth: number): DisplayItem[] {
+		const result: DisplayItem[] = [];
+		for (const node of nodes) {
+			if (node.kind === 'note') {
+				result.push({ kind: 'note', path: node.path, label: node.label, depth, pinned: node.pinned, is_index: node.is_index });
+			} else {
+				const open = openFolders.has(node.path);
+				result.push({ kind: 'folder', path: node.path, label: node.label, depth, open });
+				if (open) result.push(...flatten(node.children, depth + 1));
+			}
+		}
+		return result;
+	}
+
+	function toggleFolder(path: string) {
+		const next = new Set(openFolders);
+		if (next.has(path)) next.delete(path);
+		else next.add(path);
+		openFolders = next;
+	}
+
+	$effect(() => {
+		const sel = selected;
+		if (!sel) return;
+		const parts = sel.split('/');
+		if (parts.length <= 1) return;
+		const next = new Set(untrack(() => openFolders));
+		for (let i = 1; i < parts.length; i++) next.add(parts.slice(0, i).join('/'));
+		openFolders = next;
+	});
+
+	let indexNotes = $derived(notes.filter(n => n.is_index).sort((a, b) => a.name.localeCompare(b.name)));
+	let tree = $derived(buildTree(notes.filter(n => !n.is_template && !n.is_index)));
+	let items = $derived(flatten(tree, 0));
+
+	function focus(el: HTMLElement) { el.focus(); }
+
+	function submitNew() {
+		const trimmed = newName.trim();
+		if (!trimmed) return;
+		onNew(trimmed);
+		newName = '';
+		creating = false;
+	}
+</script>
+
+{#if mobileOpen}
+	<button class="mobile-backdrop" onclick={onMobileClose} aria-label="Close menu"></button>
+{/if}
+
+<aside class="sidebar" class:mobile-open={mobileOpen} class:collapsed>
+	<div class="sidebar-head">
+		{#if !collapsed}
+			<span class="vault-name">{vaultName}</span>
+			<div class="head-actions">
+				<button
+					onclick={() => (creating = !creating)}
+					class="head-btn"
+					title="New note"
+					aria-label="New note"
+				>
+					<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+						<path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+					</svg>
+				</button>
+				<button
+					onclick={toggleCollapse}
+					class="head-btn"
+					title="Collapse sidebar"
+					aria-label="Collapse sidebar"
+				>
+					<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+						<path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</button>
+			</div>
+		{:else}
+			<button
+				onclick={toggleCollapse}
+				class="head-btn expand-btn"
+				title="Expand sidebar"
+				aria-label="Expand sidebar"
+			>
+				<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+					<path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</button>
+		{/if}
+	</div>
+
+	{#if !collapsed}
+		{#if creating}
+			<form
+				onsubmit={(e) => { e.preventDefault(); submitNew(); }}
+				class="create-form"
+			>
+				<input
+					bind:value={newName}
+					placeholder="name or folder/name"
+					use:focus
+					onkeydown={(e) => e.key === 'Escape' && (creating = false)}
+					class="create-input"
+				/>
+			</form>
+		{/if}
+
+		{#if indexNotes.length > 0}
+			<div class="index-section">
+				{#each indexNotes as note (note.name)}
+					<button
+						onclick={() => onSelect(note.name)}
+						class="index-btn"
+						class:active={selected === note.name}
+						title={note.name}
+					>
+						<svg class="index-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+							<rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+							<rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+							<rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+							<rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+						</svg>
+						{note.name.split('/').pop()}
+					</button>
+				{/each}
+			</div>
+			<div class="index-divider"></div>
+		{/if}
+
+		<ul class="note-list">
+			{#each items as item (item.kind + ':' + item.path)}
+				<li>
+					{#if item.kind === 'folder'}
+						<button
+							onclick={() => toggleFolder(item.path)}
+							class="folder-btn"
+							style="padding-left: calc(1rem + {item.depth * 0.9}rem);"
+						>
+							<span class="folder-chevron">{item.open ? '▼' : '▶'}</span>
+							{item.label}
+						</button>
+					{:else}
+						<button
+							onclick={() => onSelect(item.path)}
+							class="note-btn"
+							class:active={selected === item.path}
+							style="padding-left: calc(1rem + {item.depth * 0.9}rem);"
+						>
+							{#if item.pinned}<span class="pin-dot" aria-hidden="true"></span>{/if}
+							{item.label}
+						</button>
+					{/if}
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</aside>
+
+<style>
+	.sidebar {
+		width: 240px;
+		min-width: 0;
+		height: 100vh;
+		background: var(--sidebar-bg);
+		border-right: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		flex-shrink: 0;
+		transition: width 200ms ease;
+	}
+
+	.sidebar.collapsed {
+		width: 44px;
+	}
+
+	/* ── Header ──────────────────────────────────────────── */
+	.sidebar-head {
+		padding: 0 0.5rem;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		gap: 0.1rem;
+		flex-shrink: 0;
+		min-height: 44px;
+	}
+
+	.vault-name {
+		flex: 1;
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--muted);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		padding-left: 0.35rem;
+	}
+
+	.head-actions {
+		display: flex;
+		align-items: center;
+	}
+
+	.head-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--muted);
+		padding: 0.35rem;
+		border-radius: 5px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 80ms, color 80ms;
+		flex-shrink: 0;
+	}
+
+	.head-btn:hover {
+		background: var(--border);
+		color: var(--text);
+	}
+
+	.expand-btn {
+		margin: 0 auto;
+	}
+
+	/* ── Create form ─────────────────────────────────────── */
+	.create-form {
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
+	}
+
+	.create-input {
+		width: 100%;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 0.3rem 0.5rem;
+		font-size: 0.85rem;
+		color: var(--text);
+		outline: none;
+		font-family: inherit;
+		box-sizing: border-box;
+	}
+
+	.create-input:focus {
+		border-color: var(--accent);
+	}
+
+	/* ── Index pages section ─────────────────────────────── */
+	.index-section {
+		padding: 0.4rem 0 0.2rem;
+		flex-shrink: 0;
+	}
+
+	.index-btn {
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		padding: 0.38rem 1rem 0.38rem 0.75rem;
+		font-size: 0.88rem;
+		color: var(--text);
+		cursor: pointer;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-family: inherit;
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-weight: 500;
+	}
+
+	.index-btn:hover {
+		background: var(--border);
+	}
+
+	.index-btn.active {
+		background: var(--border);
+	}
+
+	.index-icon {
+		flex-shrink: 0;
+		opacity: 0.6;
+		color: var(--accent);
+	}
+
+	.index-divider {
+		height: 1px;
+		background: var(--border);
+		margin: 0.2rem 0.75rem 0;
+	}
+
+	/* ── Note list ───────────────────────────────────────── */
+	.note-list {
+		margin: 0;
+		padding: 0.4rem 0;
+		list-style: none;
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	.folder-btn {
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		padding-top: 0.3rem;
+		padding-bottom: 0.3rem;
+		padding-right: 1rem;
+		font-size: 0.78rem;
+		font-variant: small-caps;
+		color: var(--muted);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-family: inherit;
+	}
+
+	.folder-btn:hover {
+		color: var(--text);
+	}
+
+	.folder-chevron {
+		font-size: 0.6rem;
+		flex-shrink: 0;
+	}
+
+	.note-btn {
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		padding-top: 0.42rem;
+		padding-bottom: 0.42rem;
+		padding-right: 1rem;
+		font-size: 0.88rem;
+		color: var(--text);
+		cursor: pointer;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-family: inherit;
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.note-btn:hover {
+		background: var(--border);
+	}
+
+	.note-btn.active {
+		background: var(--border);
+	}
+
+	.pin-dot {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--accent);
+		flex-shrink: 0;
+	}
+
+	/* ── Mobile ──────────────────────────────────────────── */
+	@media (max-width: 640px) {
+		.sidebar {
+			position: fixed;
+			left: 0;
+			top: 0;
+			bottom: 0;
+			z-index: 150;
+			width: 240px;
+			transform: translateX(-100%);
+			transition: transform 220ms ease;
+			box-shadow: 4px 0 32px rgba(0, 0, 0, 0.18);
+			height: 100dvh;
+		}
+
+		.sidebar.collapsed {
+			width: 240px;
+		}
+
+		.sidebar.mobile-open {
+			transform: translateX(0);
+		}
+
+		.mobile-backdrop {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.4);
+			z-index: 149;
+			border: none;
+			cursor: default;
+		}
+	}
+</style>

@@ -1,0 +1,11 @@
+storage/index.db
+storage/.key
+storage/.mcp-key
+storage/notes/
+storage/assets/
+storage/drawings/
+aura_notes.toml
+frontend/.env.local
+frontend/build/
+frontend/node_modules/
+backend/target/

@@ -1,0 +1,756 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+:root {
+	/* Light — papier chaud, un seul bleu comme accent */
+	--bg:         #f8f6f1;
+	--text:       #2c2825;
+	--sidebar-bg: #efebe5;
+	--border:     #dbd6cd;
+	--accent:     #3a6ea3;
+	--muted:      #7e7970;
+
+	--ui-font: 'Inter', system-ui, sans-serif;
+	--ui-font-size: 1.1rem;
+	--ui-line-height: 1.7;
+	--blockquote-text: #1a1612;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		/* Dark — slate chaud, même bleu acéré */
+		--bg:         #1c1c1c;
+		--text:       #e1dcd4;
+		--sidebar-bg: #232323;
+		--border:     #303030;
+		--accent:     #6a9fc6;
+		--muted:      #7c7870;
+		--blockquote-text: #d8d2c8;
+	}
+}
+
+/* ── Rosé Pine (dark) ────────────────────────────────────────── */
+[data-theme="rose-pine"] {
+	color-scheme: dark;
+	--bg:         #191724;
+	--text:       #e0def4;
+	--sidebar-bg: #1f1d2e;
+	--border:     #26233a;
+	--accent:     #c4a7e7;
+	--muted:      #6e6a86;
+
+	--h1-color: #eb6f92;   /* rose — doux, pas criard */
+	--h2-color: #f6c177;   /* or chaud */
+	--h3-color: #9ccfd8;   /* foam / teal pastel */
+	--h4-color: #c4a7e7;   /* iris / lavande */
+	--h5-color: #31748f;   /* pine / teal foncé */
+	--h6-color: #ebbcba;   /* rose pâle */
+
+	--code-bg:           #1f1d2e;
+	--code-inline-color: #f6c177;
+	--code-inline-bg:    rgba(246, 193, 119, 0.10);
+}
+
+/* ── Dracula (dark) ──────────────────────────────────────────── */
+[data-theme="dracula"] {
+	color-scheme: dark;
+	--bg:         #282a36;
+	--text:       #f8f8f2;
+	--sidebar-bg: #21222c;
+	--border:     #44475a;
+	--accent:     #bd93f9;
+	--muted:      #6272a4;
+
+	--h1-color: #ff79c6;
+	--h2-color: #bd93f9;
+	--h3-color: #50fa7b;
+	--h4-color: #ffb86c;
+	--h5-color: #8be9fd;
+	--h6-color: #ff5555;
+
+	--code-bg:           #1e1f29;
+	--code-inline-color: #50fa7b;
+	--code-inline-bg:    rgba(80, 250, 123, 0.10);
+}
+
+/* ── Solarized Light ─────────────────────────────────────────── */
+[data-theme="solarized"] {
+	color-scheme: light;
+	--bg:         #fdf6e3;
+	--text:       #586e75;
+	--sidebar-bg: #eee8d5;
+	--border:     #d3cbb5;
+	--accent:     #268bd2;
+	--muted:      #657b83;   /* base00 — contraste ~3.8:1, lisible */
+
+	--h1-color: #268bd2;   /* bleu — bon contraste, pas agressif */
+	--h2-color: #2aa198;   /* teal / cyan */
+	--h3-color: #859900;   /* olive — doux sur crème */
+	--h4-color: #6c71c4;   /* violet pastel */
+	--h5-color: #b58900;   /* ambre — chaud, lisible */
+	--h6-color: #cb4b16;   /* brun-orange — pas rouge vif */
+
+	--code-bg:           #eee8d5;
+	--code-inline-color: #268bd2;
+	--code-inline-bg:    rgba(38, 139, 210, 0.09);
+}
+
+/* ── Catppuccin Latte (light) ────────────────────────────────── */
+[data-theme="catppuccin"] {
+	color-scheme: light;
+	--bg:         #eff1f5;
+	--text:       #4c4f69;
+	--sidebar-bg: #e6e9ef;
+	--border:     #ccd0da;
+	--accent:     #1e66f5;
+	--muted:      #5c5f77;   /* subtext1 — contraste ~5:1, WCAG AA */
+
+	--h1-color: #7287fd;   /* lavande — doux, pas rouge */
+	--h2-color: #209fb5;   /* saphir / teal */
+	--h3-color: #179299;   /* teal légèrement plus foncé */
+	--h4-color: #8839ef;   /* mauve / violet — lisible */
+	--h5-color: #df8e1d;   /* jaune ambré — chaud */
+	--h6-color: #ea76cb;   /* rose pâle */
+
+	--code-bg:           #e6e9ef;
+	--code-inline-color: #8839ef;
+	--code-inline-bg:    rgba(136, 57, 239, 0.08);
+}
+
+/* ── Règles communes à tous les thèmes ───────────────────────── */
+/* Appliquées à [data-theme] ; les règles github-dark ci-dessous
+   ont même spécificité mais viennent après → elles priment. */
+
+[data-theme] .tiptap-editor h1 {
+	color: var(--h1-color, var(--text));
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 0.25em;
+}
+[data-theme] .tiptap-editor h2 {
+	color: var(--h2-color, var(--text));
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 0.15em;
+}
+[data-theme] .tiptap-editor h3 { color: var(--h3-color, var(--text)); }
+[data-theme] .tiptap-editor h4 { color: var(--h4-color, var(--text)); }
+[data-theme] .tiptap-editor h5 { color: var(--h5-color, var(--text)); }
+[data-theme] .tiptap-editor h6 { color: var(--h6-color, var(--text)); }
+
+[data-theme] .tiptap-editor code {
+	color: var(--code-inline-color, var(--accent));
+	background: var(--code-inline-bg, color-mix(in srgb, var(--accent) 8%, transparent));
+	border-radius: 4px;
+	padding: 0.1em 0.35em;
+	font-size: 0.88em;
+}
+
+[data-theme] .tiptap-editor pre {
+	background: var(--code-bg, var(--sidebar-bg));
+	border: 1px solid var(--border);
+	border-radius: 6px;
+}
+
+[data-theme] .tiptap-editor pre code {
+	color: var(--text);
+	background: transparent;
+	padding: 0;
+	font-size: inherit;
+}
+
+[data-theme] .tiptap-editor a { color: var(--accent); }
+
+[data-theme] .tiptap-editor blockquote {
+	border-left: 3px solid var(--border);
+	color: var(--muted);
+	padding: 0.4em 0.8em;
+	margin: 0.8em 0;
+}
+[data-theme] .tiptap-editor blockquote * {
+	color: inherit;
+}
+[data-theme] .tiptap-editor blockquote a,
+[data-theme] .tiptap-editor blockquote .wiki-link {
+	color: var(--accent);
+}
+
+[data-theme] .wiki-link {
+	color: var(--accent);
+	background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+[data-theme] .wiki-link:hover {
+	background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+[data-theme] ::selection {
+	background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* ── GitHub Dark theme ───────────────────────────────────────── */
+[data-theme="github-dark"] {
+	color-scheme: dark;
+
+	--bg:         #0d1117;
+	--text:       #c9d1d9;
+	--sidebar-bg: #010409;
+	--border:     #30363d;
+	--accent:     #58a6ff;
+	--muted:      #8b949e;
+
+	/* heading colors — repris du snippet fourni */
+	--h1-color: #e3b341;
+	--h2-color: #d2a8ff;
+	--h3-color: #79c0ff;
+	--h4-color: #3fb950;
+	--h5-color: #ffa657;
+	--h6-color: #ff7b72;
+
+	/* code */
+	--code-bg:          #161b22;
+	--code-inline-color: #ffa657;
+	--code-inline-bg:   rgba(255, 166, 87, 0.1);
+}
+
+/* GitHub Dark uses monospace as default font (overridable via settings) */
+[data-theme="github-dark"] {
+	--ui-font: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* ── Headings colorés ──────────────────────────────── */
+[data-theme="github-dark"] .tiptap-editor h1 {
+	color: var(--h1-color);
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 0.25em;
+}
+[data-theme="github-dark"] .tiptap-editor h2 {
+	color: var(--h2-color);
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 0.15em;
+}
+[data-theme="github-dark"] .tiptap-editor h3 { color: var(--h3-color); }
+[data-theme="github-dark"] .tiptap-editor h4 { color: var(--h4-color); }
+[data-theme="github-dark"] .tiptap-editor h5 { color: var(--h5-color); }
+[data-theme="github-dark"] .tiptap-editor h6 { color: var(--h6-color); }
+
+/* ── Code inline ───────────────────────────────────── */
+[data-theme="github-dark"] .tiptap-editor code {
+	color: var(--code-inline-color);
+	background: var(--code-inline-bg);
+	border-radius: 4px;
+	padding: 0.1em 0.35em;
+	font-size: 0.88em;
+}
+
+/* ── Blocs de code ─────────────────────────────────── */
+[data-theme="github-dark"] .tiptap-editor pre {
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+}
+[data-theme="github-dark"] .tiptap-editor pre code {
+	color: #c9d1d9;
+	background: transparent;
+	padding: 0;
+}
+
+/* ── Blockquotes ───────────────────────────────────── */
+[data-theme="github-dark"] .tiptap-editor blockquote {
+	border-left: 3px solid var(--border);
+	background: rgba(255, 255, 255, 0.02);
+	color: var(--muted);
+	padding: 0.4em 0.8em;
+	margin: 0.8em 0;
+}
+
+/* ── Links & wiki-links ────────────────────────────── */
+[data-theme="github-dark"] .tiptap-editor a { color: #58a6ff; }
+[data-theme="github-dark"] .wiki-link {
+	color: #58a6ff;
+	background: rgba(88, 166, 255, 0.08);
+}
+[data-theme="github-dark"] .wiki-link:hover {
+	background: rgba(88, 166, 255, 0.16);
+}
+
+/* ── Selection ─────────────────────────────────────── */
+[data-theme="github-dark"] ::selection {
+	background: rgba(56, 139, 253, 0.3);
+}
+
+*, *::before, *::after {
+	box-sizing: border-box;
+}
+
+html, body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	background-color: var(--bg);
+	color: var(--text);
+	font-family: var(--ui-font);
+	font-size: var(--ui-font-size);
+	line-height: var(--ui-line-height);
+	-webkit-font-smoothing: antialiased;
+}
+
+/* ── Default theme — éléments éditeur ───────────────────────────── */
+.tiptap-editor a {
+	color: var(--accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.tiptap-editor code {
+	background: color-mix(in srgb, var(--accent) 8%, var(--sidebar-bg));
+	color: var(--text);
+	border-radius: 4px;
+	padding: 0.1em 0.35em;
+	font-size: 0.88em;
+}
+
+.tiptap-editor pre {
+	background: var(--sidebar-bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+}
+
+.tiptap-editor pre code {
+	background: transparent;
+	padding: 0;
+	font-size: inherit;
+}
+
+.tiptap-editor blockquote a,
+.tiptap-editor blockquote .wiki-link {
+	color: var(--accent);
+}
+
+/* ── Wiki links ─────────────────────────────────────────────── */
+.wiki-link {
+	display: inline;
+	color: var(--accent);
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+	border-radius: 3px;
+	padding: 0 0.15em;
+	cursor: pointer;
+	font-weight: 500;
+	text-decoration: none;
+	transition: background 80ms;
+}
+
+.wiki-link:hover {
+	background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* ── Query block ─────────────────────────────────────────────── */
+.query-block {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0.8rem 0;
+    font-size: 0.88rem;
+    background: var(--sidebar-bg);
+}
+
+.query-block-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.query-block-icon {
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.query-block-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+.query-block-input::placeholder { color: var(--muted); }
+
+.query-block-results {
+    padding: 0.3rem 0;
+}
+
+.query-result-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.25rem 0.75rem;
+    cursor: default;
+}
+.query-result-item:hover,
+.query-result-item:has(.query-result-name:focus) { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+.query-result-name {
+    color: var(--accent);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    text-align: left;
+}
+.query-result-name:hover,
+.query-result-name:focus { text-decoration: underline; outline: none; }
+
+.query-result-path {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    opacity: 0.65;
+}
+
+.query-result-meta {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.query-empty {
+    display: block;
+    padding: 0.4rem 0.75rem;
+    color: var(--muted);
+    font-style: italic;
+}
+
+.query-error { color: #e57373; }
+
+.query-tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.query-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--text);
+    transition: background 80ms, border-color 80ms;
+}
+.query-tag-chip:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-color: var(--accent);
+}
+.query-tag-chip.active {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: var(--accent);
+}
+
+.query-result-count {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.query-block-lock {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    color: var(--muted);
+    opacity: 0.35;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    border-radius: 3px;
+}
+.query-block-lock:hover { opacity: 0.8; }
+.query-block.locked .query-block-lock {
+    color: var(--accent);
+    opacity: 0.7;
+}
+.query-block.locked .query-block-input {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.query-tag-name { color: var(--accent); font-weight: 500; }
+.query-tag-count { color: var(--muted); font-size: 0.72rem; }
+.query-field-cloud { border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 0.25rem; }
+
+/* ── TipTap task list ────────────────────────────────────────── */
+/*
+ * TaskList renders its <ul> via renderHTML → gets data-type="taskList".
+ * TaskItem uses addNodeView → creates <li> manually, sets only data-checked,
+ * never data-type. So we target ul[data-type="taskList"] > li, not li[data-type].
+ */
+.tiptap-editor ul[data-type="taskList"] {
+	list-style: none !important;
+	padding-left: 0 !important;
+	margin: 0.4rem 0 0.8rem;
+}
+
+.tiptap-editor ul[data-type="taskList"] > li {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: flex-start !important;
+	gap: 0.5rem;
+	margin: 0.2rem 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] > li > label {
+	display: flex !important;
+	align-items: center;
+	flex-shrink: 0;
+	padding-top: 0.28rem;
+	cursor: pointer;
+	user-select: none;
+}
+
+.tiptap-editor ul[data-type="taskList"] > li > label input[type="checkbox"] {
+	width: 1rem;
+	height: 1rem;
+	margin: 0;
+	cursor: pointer;
+	accent-color: var(--accent);
+}
+
+.tiptap-editor ul[data-type="taskList"] > li > div {
+	flex: 1 !important;
+	min-width: 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] > li > div > p {
+	margin: 0 !important;
+}
+
+.tiptap-editor ul[data-type="taskList"] > li[data-checked="true"] > div {
+	text-decoration: line-through;
+	opacity: 0.55;
+}
+
+/* ── Drawing block (Excalidraw) ──────────────────────────────── */
+.drawing-block {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0.8rem 0;
+    background: var(--sidebar-bg);
+}
+
+.drawing-block-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.drawing-block-icon {
+    color: var(--accent);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.drawing-block-name {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drawing-block-edit-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+
+.drawing-block-delete-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.drawing-block-delete-btn:hover { color: #e57373; }
+.drawing-block-edit-btn:hover { opacity: 0.85; }
+
+.drawing-block-preview {
+    padding: 0.5rem;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drawing-block-preview svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.drawing-placeholder {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-style: italic;
+}
+
+.drawing-resize-handle {
+    height: 6px;
+    cursor: ns-resize;
+    background: transparent;
+    border-top: 2px solid var(--border);
+    transition: border-color 120ms;
+    flex-shrink: 0;
+}
+
+.drawing-resize-handle:hover {
+    border-top-color: var(--accent);
+}
+
+/* ── Excalidraw editor overlay ───────────────────────────────── */
+.drawing-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+}
+
+.drawing-editor-root {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.drawing-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+
+.drawing-editor-name {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drawing-editor-btn {
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.82rem;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+
+.drawing-editor-btn:hover { background: var(--border); }
+
+.drawing-editor-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+}
+
+.drawing-editor-btn.primary:hover { opacity: 0.85; }
+
+.drawing-editor-canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    /* Excalidraw needs an explicit height — flex:1 alone isn't enough */
+    min-height: 0;
+    height: 100%;
+}
+
+/* ── Print / PDF ─────────────────────────────────────────────── */
+@media print {
+	html, body { height: auto !important; overflow: visible !important; }
+	body { background: white !important; color: black !important; }
+
+	/* Hide everything except the editor */
+	.sidebar,
+	.mobile-topbar,
+	.titlebar,
+	.mobile-rename,
+	.backlinks,
+	.fm-wrap,
+	.toc-bar { display: none !important; }
+
+	/* Remove all height/overflow constraints so content flows across pages */
+	.layout { display: block !important; height: auto !important; overflow: visible !important; }
+	.main { display: block !important; height: auto !important; overflow: visible !important; }
+	.editor-wrap { overflow: visible !important; height: auto !important; padding: 0 !important; }
+
+	.tiptap-editor {
+		max-width: none !important;
+		padding: 0 !important;
+		font-size: 11pt !important;
+		line-height: 1.6 !important;
+		color: black !important;
+		min-height: 0 !important;
+	}
+
+	.tiptap-editor a { color: black !important; }
+	.wiki-link { background: none !important; border: none !important; }
+
+	/* Code blocks: hide floating controls, simple left-border style */
+	.code-block-header { display: none !important; }
+	.code-block-wrap {
+		border-left: 3px solid #ccc !important;
+		border-radius: 0 3px 3px 0 !important;
+		background: #f5f5f5 !important;
+		overflow: visible !important;
+	}
+	.tiptap-editor .code-block-wrap pre {
+		padding: 0.7rem 0.9rem !important;
+		overflow: visible !important;
+		white-space: pre-wrap !important;
+	}
+	.tiptap-editor .code-block-wrap pre code {
+		background: none !important;
+		color: #1a1a1a !important;
+		font-size: 9pt !important;
+	}
+}
