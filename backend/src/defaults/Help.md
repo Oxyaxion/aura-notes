@@ -25,12 +25,13 @@ priority: high
 project: Aura Notes
 rating: 4
 pinned: false
+locked: false
 ---
 ```
 
 **Dynamic queries filter notes based on these fields as well as file modification dates.** Each `field:value` in a query maps directly to a frontmatter field.
 
-Available fields: `title`, `status`, `date`, `due`, `type`, `area`, `author`, `rating`, `url`, `alias`, `pinned`, `tags`, `priority`, `project`, `lastModified`.
+Available fields: `title`, `status`, `date`, `due`, `type`, `area`, `author`, `rating`, `url`, `alias`, `pinned`, `locked`, `tags`, `priority`, `project`, `lastModified`.
 
 All fields are optional. The `title` field has a special behavior: if the note starts with a `# H1`, it is automatically used as the title (visible in the sidebar and search results). A `title:` manually set in the frontmatter takes priority over the H1.
 
@@ -90,6 +91,7 @@ lastModified: 2026-01-01
 | `url:value` | Frontmatter `url` | Substring | `url:github.com` |
 | `alias:value` | Frontmatter `aliases` | Exact | `alias:my-shortcut` |
 | `pinned:true/false` | Frontmatter `pinned` | Exact | `pinned:true` |
+| `locked:true/false` | Frontmatter `locked` | Exact | `locked:true` |
 | `lastModified:prefix` | Frontmatter `lastModified` (auto-updated on save) | Prefix | `lastModified:2026-05` |
 | `recent:n` | **File modification** date | The n most recent | `recent:10` |
 | `oldest:n` | **File modification** date | The n oldest | `oldest:5` |
@@ -284,9 +286,20 @@ Query blocks placed consecutively flow into the two-column grid; headings and pa
 
 ---
 
-### Locking a Query Block
+### Locking a Note (Read-Only)
 
-The small lock icon (🔒) in the corner of a `{}` block freezes the query to prevent accidental changes. Results continue to update dynamically. The locked state is persisted in the Markdown file.
+The padlock icon in the title bar toggles a note between **editable** and **read-only** mode.
+
+- Click the open padlock → the note is locked. `locked: true` is written to the frontmatter and the editor becomes non-editable.
+- Click the closed padlock (orange) → the note is unlocked and editable again.
+
+The locked state is stored directly in the frontmatter, so it persists across sessions and is queryable:
+
+```
+locked:true                          → all locked notes
+locked:false                         → all editable notes
+locked:true order by lastModified    → locked notes, most recently saved first
+```
 
 ---
 

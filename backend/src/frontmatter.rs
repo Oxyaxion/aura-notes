@@ -18,6 +18,7 @@ pub struct ParsedNote {
     pub author: Option<String>,
     pub rating: Option<i64>,
     pub pinned: bool,
+    pub locked: bool,
     pub area: Option<String>,
     pub priority: Option<String>,
     pub project: Option<String>,
@@ -148,6 +149,11 @@ pub fn parse_note(content: &str) -> ParsedNote {
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
 
+    let locked = frontmatter
+        .get("locked")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
     let area = frontmatter
         .get("area")
         .and_then(|v| v.as_str())
@@ -182,6 +188,7 @@ pub fn parse_note(content: &str) -> ParsedNote {
         author,
         rating,
         pinned,
+        locked,
         area,
         priority,
         project,

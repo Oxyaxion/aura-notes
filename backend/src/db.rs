@@ -22,6 +22,7 @@ pub struct NoteRow {
     pub author: Option<String>,
     pub rating: Option<i64>,
     pub pinned: bool,
+    pub locked: bool,
     pub area: Option<String>,
     pub priority: Option<String>,
     pub project: Option<String>,
@@ -72,6 +73,7 @@ impl Db {
             author: parsed.author.clone(),
             rating: parsed.rating,
             pinned: parsed.pinned,
+            locked: parsed.locked,
             area: parsed.area.clone(),
             priority: parsed.priority.clone(),
             project: parsed.project.clone(),
@@ -288,6 +290,7 @@ enum Pred {
     Alias(String, bool),      // exact match (lowercase)
     Url(String, bool),        // substring (lowercase)
     Pinned(bool),             // expected value (NOT already folded in at parse time)
+    Locked(bool),
     Priority(String, bool),        // exact match (high/medium/low)
     Project(String, bool),         // substring (lowercase)
     LastModified(String, bool),    // starts_with
@@ -360,6 +363,7 @@ impl Pred {
                 if *not { !m } else { m }
             }
             Pred::Pinned(expected) => note.pinned == *expected,
+            Pred::Locked(expected) => note.locked == *expected,
             Pred::Priority(val, not) => {
                 let m = note.priority.as_deref() == Some(val.as_str());
                 if *not { !m } else { m }
@@ -530,6 +534,11 @@ fn parse_query(q: &str) -> (Vec<Vec<Pred>>, Vec<Pred>, Option<usize>, Option<usi
                 "pinned" => match v {
                     "true"  => Pred::Pinned(!not),
                     "false" => Pred::Pinned(not),
+                    _       => continue,
+                },
+                "locked" => match v {
+                    "true"  => Pred::Locked(!not),
+                    "false" => Pred::Locked(not),
                     _       => continue,
                 },
                 "recent" => {

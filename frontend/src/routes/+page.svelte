@@ -63,6 +63,7 @@
 	);
 
 	const isIndex = $derived(noteFrontmatter.type === 'index');
+	const isLocked = $derived(noteFrontmatter.locked === true);
 
 	function disableToc() {
 		onFrontmatterChange({ ...noteFrontmatter, toc: false });
@@ -227,6 +228,16 @@
 		document.dispatchEvent(new CustomEvent('notes:changed'));
 	}
 
+	function toggleLock() {
+		const fm = { ...noteFrontmatter };
+		if (isLocked) {
+			delete (fm as any).locked;
+		} else {
+			(fm as any).locked = true;
+		}
+		onFrontmatterChange(fm);
+	}
+
 	function openPalette() {
 		paletteOpen = true;
 	}
@@ -352,6 +363,27 @@
 						{#if saving}
 							<span class="saving-label">Saving…</span>
 						{/if}
+						<button
+							onclick={toggleLock}
+							title={isLocked ? 'Unlock note' : 'Lock note (read-only)'}
+							class="lock-btn"
+							class:locked={isLocked}
+							aria-label={isLocked ? 'Unlock note' : 'Lock note'}
+						>
+							{#if isLocked}
+								<!-- Closed padlock -->
+								<svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+									<rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/>
+									<path d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+								</svg>
+							{:else}
+								<!-- Open padlock -->
+								<svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+									<rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/>
+									<path d="M7 9V6a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+								</svg>
+							{/if}
+						</button>
 						<!-- Small command palette button -->
 						<button
 							onclick={openPalette}
@@ -394,7 +426,7 @@
 					frontmatter={noteFrontmatter}
 					onChange={onFrontmatterChange}
 				/>
-				<Editor {noteContent} noteNames={notes.map(n => n.name)} {onEdit} {isIndex} />
+				<Editor {noteContent} noteNames={notes.map(n => n.name)} {onEdit} {isIndex} {isLocked} />
 			{/key}
 			<Backlinks note={selected} onNavigate={selectNote} />
 		{:else}
@@ -533,6 +565,28 @@
 	.cmd-btn kbd {
 		font-family: inherit;
 		font-size: 0.7rem;
+	}
+
+	.lock-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--muted);
+		padding: 0.25rem;
+		border-radius: 5px;
+		display: flex;
+		align-items: center;
+		opacity: 0.4;
+		transition: opacity 0.15s, color 0.15s;
+	}
+
+	.lock-btn:hover {
+		opacity: 1;
+	}
+
+	.lock-btn.locked {
+		opacity: 1;
+		color: #e07b39;
 	}
 
 	/* ── Rename ──────────────────────────────────────────────── */

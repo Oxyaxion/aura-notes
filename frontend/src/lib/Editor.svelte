@@ -284,10 +284,11 @@
 		noteContent: string;
 		noteNames: string[];
 		isIndex?: boolean;
+		isLocked?: boolean;
 		onEdit: (markdown: string) => void;
 	}
 
-	let { noteContent, noteNames, isIndex = false, onEdit }: Props = $props();
+	let { noteContent, noteNames, isIndex = false, isLocked = false, onEdit }: Props = $props();
 
 	let element: HTMLDivElement;
 	let editor: Editor | null = null;  // must NOT be $state — TipTap mutates it internally
@@ -428,6 +429,11 @@
 		}
 	});
 
+	$effect(() => {
+		if (!editorReady || !editor) return;
+		editor.setEditable(!isLocked);
+	});
+
 	onDestroy(() => {
 		document.removeEventListener('insert-image', onInsertImageEvent);
 		if (_imgPasteHandler) element.removeEventListener('paste', _imgPasteHandler as EventListener, true);
@@ -438,7 +444,7 @@
 	});
 </script>
 
-<div bind:this={element} class="editor-wrap" class:index-page={isIndex}></div>
+<div bind:this={element} class="editor-wrap" class:index-page={isIndex} class:locked={isLocked}></div>
 
 {#if tableActive && editorReady}
 	<div class="table-toolbar" role="toolbar" tabindex="-1" aria-label="Table actions" style={toolbarStyle} onmousedown={(e) => e.preventDefault()}>
@@ -486,6 +492,11 @@
 		flex: 1;
 		overflow-y: auto;
 		padding: 2rem 3rem;
+	}
+
+	.locked :global(.tiptap-editor) {
+		cursor: default;
+		user-select: text;
 	}
 
 	/* ── Index page layout ──────────────────────────────── */

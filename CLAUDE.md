@@ -121,6 +121,7 @@ Parsed entirely in `src/db.rs::parse_query`. Tokens are whitespace-separated.
 - `rating:n` → exact integer match
 - `alias:val` → exact match on aliases list
 - `pinned:true/false` → boolean
+- `locked:true/false` → boolean (note is read-only when `true`)
 - `priority:val` → exact match (`high`, `medium`, `low`); `order by priority` uses semantic order (high → medium → low)
 
 **Limiters** (applied before `order by`):
@@ -149,8 +150,15 @@ On every `PUT /notes/{name}`, `src/frontmatter.rs::stamp_last_modified()` is cal
 Notes with `type: index` in their frontmatter are treated as dashboard pages:
 - **Backend:** `NoteMeta.is_index` is set to `true` in `GET /notes`
 - **Sidebar:** shown in a dedicated section at the top (above the tree), with a grid icon (⊞)
-- **Editor:** H1 is centered + larger; query blocks render in a 2-column CSS grid (non-query-block elements span full width via `grid-column: 1 / -1`)
+- **Editor:** H1 is centered + larger; query blocks render in a responsive CSS grid (`repeat(auto-fill, minmax(min(100%, 380px), 1fr))`) — 1 column on mobile, 2 on tablet, 3+ on wide screens. Non-query-block elements span full width via `grid-column: 1 / -1`.
 - **Command palette:** grid icon instead of the document icon
+
+### Note locking (`locked: true`)
+
+Setting `locked: true` in a note's frontmatter makes it read-only:
+- **Frontend:** padlock icon in the title bar (discrete when unlocked, orange when locked). Clicking toggles `locked: true/false` in the frontmatter and saves. TipTap switches to `editable(false)` via `$effect` reacting to the `isLocked` prop.
+- **Backend:** `NoteRow.locked` is indexed from frontmatter; queryable via `locked:true/false` in the DSL (`Pred::Locked`).
+- **Enforcement:** frontend-only — the backend does not reject PUT/DELETE on locked notes. Locking is a UX guard, not a security boundary.
 
 ### Backend source files
 - `src/main.rs` — Axum router, app state, startup indexing, `--hash-password` flag

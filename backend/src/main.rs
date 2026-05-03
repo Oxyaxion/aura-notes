@@ -25,6 +25,7 @@ pub struct AppState {
     pub password_hash: String,
     pub sessions: session::SessionStore,
     pub api_key: Option<String>,
+    pub login_guard: auth::LoginGuard,
 }
 
 #[tokio::main]
@@ -96,6 +97,7 @@ async fn setup_state() -> (AppState, u16) {
         password_hash: cfg.password,
         sessions: session::SessionStore::new(),
         api_key: cfg.api_key,
+        login_guard: auth::LoginGuard::new(),
     };
     (state, port)
 }
@@ -140,7 +142,7 @@ async fn run_server(state: Arc<AppState>, port: u16) {
     let addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     tracing::info!("Listening on http://{addr}");
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>()).await.unwrap();
 }
 
 fn index_all_notes(db: &db::Db, notes_dir: &std::path::Path) {
