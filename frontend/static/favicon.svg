@@ -1,6 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#1e1a2e"/>
-  <circle cx="16" cy="16" r="9" fill="none" stroke="#9b8fd4" stroke-width="1.5" opacity="0.5"/>
-  <circle cx="16" cy="16" r="5" fill="none" stroke="#c4b5f4" stroke-width="1.5" opacity="0.8"/>
-  <circle cx="16" cy="16" r="2" fill="#e2d9ff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Metallic brass gradient for the shaft (light top, dark bottom) -->
+    <linearGradient id="shaft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#E2C46A"/>
+      <stop offset="30%"  stop-color="#C09030"/>
+      <stop offset="70%"  stop-color="#8A6018"/>
+      <stop offset="100%" stop-color="#5C3E0C"/>
+    </linearGradient>
+    <!-- Radial gradient for the bow — bright center-left, dark edges -->
+    <radialGradient id="bow" cx="35%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#E8CC70"/>
+      <stop offset="40%"  stop-color="#C09030"/>
+      <stop offset="100%" stop-color="#5C3A0A"/>
+    </radialGradient>
+    <!-- Thin edge highlight on bow rim -->
+    <radialGradient id="bowrim" cx="35%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#F0DC90"/>
+      <stop offset="100%" stop-color="#7A4E14"/>
+    </radialGradient>
+    <!-- Hole — slightly lighter than background to suggest depth -->
+    <radialGradient id="hole" cx="60%" cy="60%" r="70%">
+      <stop offset="0%"   stop-color="#241a10"/>
+      <stop offset="100%" stop-color="#100c07"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#16110c"/>
+
+  <!-- Key — horizontal then rotated -45° around center -->
+  <g transform="translate(256,256) rotate(-45)">
+
+    <!-- Bow rim (slightly larger, darker ring for depth) -->
+    <circle cx="-118" cy="0" r="88" fill="url(#bowrim)"/>
+    <!-- Bow main face -->
+    <circle cx="-118" cy="0" r="83" fill="url(#bow)"/>
+    <!-- Bow hole -->
+    <circle cx="-118" cy="0" r="47" fill="url(#hole)"/>
+    <!-- Hole rim shadow -->
+    <circle cx="-118" cy="0" r="47" fill="none" stroke="#3a2808" stroke-width="3"/>
+
+    <!-- Shaft -->
+    <rect x="-35" y="-20" width="200" height="40" rx="9" fill="url(#shaft)"/>
+    <!-- Shaft edge highlight (thin line on top) -->
+    <rect x="-35" y="-20" width="200" height="5" rx="4" fill="rgba(255,240,180,0.25)"/>
+    <!-- Shaft bottom shadow -->
+    <rect x="-35" y="15"  width="200" height="5" rx="4" fill="rgba(0,0,0,0.35)"/>
+
+    <!-- Teeth -->
+    <rect x="14"  y="20" width="30" height="50" rx="5" fill="url(#shaft)"/>
+    <rect x="70"  y="20" width="30" height="66" rx="5" fill="url(#shaft)"/>
+    <rect x="126" y="20" width="30" height="40" rx="5" fill="url(#shaft)"/>
+
+    <!-- Subtle worn mark on bow (very light, not rusty) -->
+    <circle cx="-95" cy="28" r="6" fill="rgba(80,50,10,0.3)"/>
+    <circle cx="-148" cy="-18" r="4" fill="rgba(80,50,10,0.2)"/>
+
+  </g>
 </svg>
