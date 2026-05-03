@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="icon.svg" alt="Aura Notes" width="96" />
-  <h1>Aura Notes</h1>
+  <img src="icon.svg" alt="Clef Note" width="96" />
+  <h1>Clef Note</h1>
   <p><em>A lightweight, fast, queryable, keyboard-oriented note-taking app with a minimal footprint.</em></p>
-  <img src="aura-notes.png" alt="Aura Notes screenshot" width="800" />
+  <img src="clef-note.png" alt="Clef Note screenshot" width="800" />
 </div>
 
 <br />
@@ -56,10 +56,10 @@ cd frontend && npm install && npm run build
 cd ../backend && cargo build --release
 
 # 3. Run — serves UI + API on http://localhost:3000
-./target/release/aura-notes --config /path/aura_notes.toml
+./target/release/clef-note --config /path/clef-note.toml
 ```
 
-No Node.js needed at runtime — `aura-notes` is self-contained.
+No Node.js needed at runtime — `clef-note` is self-contained.
 
 ### Development
 
@@ -67,7 +67,7 @@ Run the backend and frontend in two separate terminals:
 
 ```bash
 # backend (API on http://localhost:3000)
-cd backend && cargo run -- --config /path/aura_notes.toml --storage /path/storage 
+cd backend && cargo run -- --config /path/clef-note.toml --storage /path/storage 
 
 # frontend (UI on http://localhost:5173, proxies API to :3000)
 cd frontend && npm install && npm run dev
@@ -77,17 +77,17 @@ Open `http://localhost:5173`.
 
 ### Run as a systemd service
 
-Create `/etc/systemd/system/aura-notes.service`:
+Create `/etc/systemd/system/clef-note.service`:
 
 ```ini
 [Unit]
-Description=Aura Notes
+Description=Clef Note
 After=network.target
 
 [Service]
-User=aura-notes
-WorkingDirectory=/opt/aura-notes
-ExecStart=/opt/aura-notes/aura-notes
+User=clef-note
+WorkingDirectory=/opt/clef-note
+ExecStart=/opt/clef-note/clef-note
 Restart=on-failure
 
 [Install]
@@ -96,27 +96,27 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now aura-notes
-sudo journalctl -u aura-notes -f    # follow logs
+sudo systemctl enable --now clef-note
+sudo journalctl -u clef-note -f    # follow logs
 ```
 
-The `aura-notes` binary serves both the frontend and the API on port `3000` — no nginx, no Node.js required in production.
+The `clef-note` binary serves both the frontend and the API on port `3000` — no nginx, no Node.js required in production.
 
 ### FreeBSD rc.d service
 
-Create `/usr/local/etc/rc.d/aura_notes`:
+Create `/usr/local/etc/rc.d/clef-note`:
 
 ```sh
 #!/bin/sh
-# PROVIDE: aura_notes
+# PROVIDE: clef-note
 # REQUIRE: NETWORKING
 # KEYWORD: shutdown
 
 . /etc/rc.subr
 
-name="aura_notes"
-rcvar="aura_notes_enable"
-command="/opt/aura-notes/aura-notes"
+name="clef-note"
+rcvar="clef-note_enable"
+command="/opt/clef-note/clef-note"
 pidfile="/var/run/${name}.pid"
 
 load_rc_config $name
@@ -124,19 +124,19 @@ run_rc_command "$1"
 ```
 
 ```bash
-chmod +x /usr/local/etc/rc.d/aura_notes
-echo 'aura_notes_enable="YES"' >> /etc/rc.conf
-service aura_notes start
+chmod +x /usr/local/etc/rc.d/clef-note
+echo 'clef-note_enable="YES"' >> /etc/rc.conf
+service clef-note start
 ```
 
 ---
 
 ## Configuration
 
-All configuration lives in `aura_notes.toml`, looked up next to the binary by default. A template is provided at [`aura_notes.toml.example`](aura_notes.toml.example).
+All configuration lives in `clef-note.toml`, looked up next to the binary by default. A template is provided at [`clef-note.toml.example`](clef-note.toml.example).
 
 ```toml
-# Required — hash with: ./aura-notes --hash-password "yourpassword"
+# Required — hash with: ./clef-note --hash-password "yourpassword"
 password = "$argon2id$v=19$..."
 
 # Optional
@@ -149,7 +149,7 @@ password = "$argon2id$v=19$..."
 ```
 --storage <path>             Override the notes storage directory
 --port    <port>             Listening port (default: 3000)
---config  <path>             Path to aura_notes.toml
+--config  <path>             Path to clef-note.toml
 --hash-password <plaintext>  Print Argon2 hash and exit
 ```
 

@@ -18,7 +18,7 @@ pub async fn get_spec(req: Request) -> Json<Value> {
     Json(json!({
         "openapi": "3.0.3",
         "info": {
-            "title": "Aura Notes",
+            "title": "Clef Note",
             "description": "Self-hosted Zettelkasten note-taking API. All endpoints require `Authorization: Bearer <api_key>`.",
             "version": "1.0.0"
         },
@@ -29,7 +29,7 @@ pub async fn get_spec(req: Request) -> Json<Value> {
                 "bearer": {
                     "type": "http",
                     "scheme": "bearer",
-                    "description": "API key configured in aura_notes.toml (api_key field)"
+                    "description": "API key configured in clef-note.toml (api_key field)"
                 }
             },
             "schemas": {

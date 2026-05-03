@@ -1,17 +1,17 @@
 use serde::Deserialize;
 
-const TEMPLATE: &str = r#"# Aura Notes — configuration
+const TEMPLATE: &str = r#"# Clef Note — configuration
 
 # Password for the web UI login.
-# Hash with: ./aura-notes --hash-password "yourpassword"
+# Hash with: ./clef-note --hash-password "yourpassword"
 password = ""
 
 # Storage directory — optional. Defaults to ../storage (relative to the backend/).
-# Can be overridden at runtime with: ./aura-notes --storage /mnt/notes
+# Can be overridden at runtime with: ./clef-note --storage /mnt/notes
 # storage = "/mnt/notes"
 
 # Port — optional. Defaults to 3000.
-# Can be overridden at runtime with: ./aura-notes --port 8080
+# Can be overridden at runtime with: ./clef-note --port 8080
 # port = 3000
 
 # API key — optional. For programmatic access (CLI, REST, OpenAI tools…).
@@ -40,7 +40,7 @@ pub fn resolve_path(storage_path: &std::path::Path) -> std::path::PathBuf {
     if let Ok(p) = std::env::var("AURA_NOTES_CONFIG") && !p.is_empty() {
         return std::path::PathBuf::from(p);
     }
-    storage_path.parent().unwrap_or(storage_path).join("aura_notes.toml")
+    storage_path.parent().unwrap_or(storage_path).join("clef-note.toml")
 }
 
 pub fn load(storage_path: &std::path::Path) -> Config {
@@ -50,8 +50,8 @@ pub fn load(storage_path: &std::path::Path) -> Config {
         Ok(s) => s,
         Err(_) => {
             std::fs::write(&path, TEMPLATE).ok();
-            eprintln!("error: aura_notes.toml not found — a template has been created at {}", path.display());
-            eprintln!("       Set password (./aura-notes --hash-password \"yourpassword\") and restart.");
+            eprintln!("error: clef-note.toml not found — a template has been created at {}", path.display());
+            eprintln!("       Set password (./clef-note --hash-password \"yourpassword\") and restart.");
             std::process::exit(1);
         }
     };
@@ -59,20 +59,20 @@ pub fn load(storage_path: &std::path::Path) -> Config {
     let cfg: Config = match toml::from_str(&raw) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("error: failed to parse aura_notes.toml: {e}");
+            eprintln!("error: failed to parse clef-note.toml: {e}");
             std::process::exit(1);
         }
     };
 
     if cfg.password.trim().is_empty() {
-        eprintln!("error: password is not set in aura_notes.toml");
-        eprintln!("       Hash one with: ./aura-notes --hash-password \"yourpassword\"");
+        eprintln!("error: password is not set in clef-note.toml");
+        eprintln!("       Hash one with: ./clef-note --hash-password \"yourpassword\"");
         std::process::exit(1);
     }
 
     if !cfg.password.starts_with("$argon2") {
-        eprintln!("error: password in aura_notes.toml must be an Argon2 hash");
-        eprintln!("       Generate with: ./aura-notes --hash-password \"yourpassword\"");
+        eprintln!("error: password in clef-note.toml must be an Argon2 hash");
+        eprintln!("       Generate with: ./clef-note --hash-password \"yourpassword\"");
         std::process::exit(1);
     }
 

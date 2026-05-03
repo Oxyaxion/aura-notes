@@ -29,10 +29,10 @@ export function applySettings(s: AppSettings): void {
     root.style.setProperty('--ui-font-size', `${s.fontSize}rem`);
     root.style.setProperty('--ui-line-height', String(s.lineHeight));
 
-    let styleEl = document.getElementById('aura-user-css') as HTMLStyleElement | null;
+    let styleEl = document.getElementById('clef-user-css') as HTMLStyleElement | null;
     if (!styleEl) {
         styleEl = document.createElement('style');
-        styleEl.id = 'aura-user-css';
+        styleEl.id = 'clef-user-css';
         document.head.appendChild(styleEl);
     }
     styleEl.textContent = s.customCss;

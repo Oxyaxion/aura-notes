@@ -9,7 +9,7 @@ export const THEMES = [
 
 export type ThemeId = typeof THEMES[number]['id'];
 
-const KEY = 'maunotes-theme';
+const KEY = 'clef-theme';
 
 export function loadTheme(): ThemeId {
     return (localStorage.getItem(KEY) as ThemeId) ?? 'default';

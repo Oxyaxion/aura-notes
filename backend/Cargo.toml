@@ -1,10 +1,10 @@
 [package]
-name = "aura-notes-backend"
+name = "clef-note-backend"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "aura-notes"
+name = "clef-note"
 path = "src/main.rs"
 
 [dependencies]

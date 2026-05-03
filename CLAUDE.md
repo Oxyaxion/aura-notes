@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: Aura Notes
+## Project: Clef Note
 
 A local-first, self-hosted Zettelkasten note-taking app targeting FreeBSD. Design goal: Typora/Obsidian-level UX with minimal RAM/CPU usage.
 
@@ -43,7 +43,7 @@ npm run check:watch      # type-check in watch mode
 ```bash
 cd frontend && npm run build   # build static assets → frontend/build/
 cd backend && cargo build      # embeds frontend/build via rust-embed
-./backend/target/debug/aura-notes  # serves everything on http://localhost:3000
+./backend/target/debug/clef-note  # serves everything on http://localhost:3000
 ```
 
 The release binary embeds all frontend assets at compile time (via `rust-embed`). In dev mode, assets are read from `../frontend/build` at runtime, so rebuild the frontend whenever you change it.
@@ -62,7 +62,7 @@ cd frontend && npm run dev
 
 ### Storage layout
 
-Storage defaults to `../storage` relative to the `backend/` working directory. It is configurable via `--storage <path>` CLI flag or the `storage` key in `aura_notes.toml` (CLI takes precedence). The `aura_notes.toml` location is unaffected by `--storage`. Port `3000` is still hardcoded in `src/main.rs`.
+Storage defaults to `../storage` relative to the `backend/` working directory. It is configurable via `--storage <path>` CLI flag or the `storage` key in `clef-note.toml` (CLI takes precedence). The `clef-note.toml` location is unaffected by `--storage`. Port `3000` is still hardcoded in `src/main.rs`.
 
 ```
 storage/
@@ -162,7 +162,7 @@ Setting `locked: true` in a note's frontmatter makes it read-only:
 
 ### Backend source files
 - `src/main.rs` — Axum router, app state, startup indexing, `--hash-password` flag
-- `src/config.rs` — `aura_notes.toml` loading and validation
+- `src/config.rs` — `clef-note.toml` loading and validation
 - `src/auth.rs` — auth middleware (`from_fn_with_state`), `login`/`logout` handlers, `hash_password`
 - `src/session.rs` — in-memory session store (`RwLock<HashMap<token, expiry>>`, TTL 30 days)
 - `src/key.rs` — `GET /api/key` handler, `random_hex_key()` utility
@@ -221,7 +221,7 @@ Setting `locked: true` in a note's frontmatter makes it read-only:
 
 ## Authentication
 
-All auth configuration lives in `aura_notes.toml` (at the repo root by default, or via `--config <path>` / `AURA_NOTES_CONFIG` env var).
+All auth configuration lives in `clef-note.toml` (at the repo root by default, or via `--config <path>` / `AURA_NOTES_CONFIG` env var).
 
 ```toml
 # Hash with: ./server --hash-password "yourpassword"

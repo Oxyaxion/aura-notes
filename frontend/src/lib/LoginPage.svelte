@@ -26,7 +26,7 @@
 
 <div class="login-wrap">
 	<form class="login-card" onsubmit={submit}>
-		<h1 class="app-name">Aura Notes</h1>
+		<h1 class="app-name">Clef Note</h1>
 		<input
 			type="password"
 			placeholder="Password"

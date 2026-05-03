@@ -1,6 +1,6 @@
 const BASE = import.meta.env.VITE_API_BASE ?? '';
 
-const TOKEN_KEY = 'aura_token';
+const TOKEN_KEY = 'clef_token';
 
 export const session = {
     get: (): string => localStorage.getItem(TOKEN_KEY) ?? '',

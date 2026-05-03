@@ -22,7 +22,7 @@ tags:
 date: 2025-04-28
 area: pro
 priority: high
-project: Aura Notes
+project: Clef Note
 rating: 4
 pinned: false
 locked: false
@@ -83,7 +83,7 @@ lastModified: 2026-01-01
 | `type:value` | Frontmatter `type` | Exact | `type:note` `type:book` |
 | `area:value` | Frontmatter `area` | Substring | `area:pro` |
 | `priority:value` | Frontmatter `priority` | Exact | `priority:high` |
-| `project:value` | Frontmatter `project` | Substring | `project:Aura` |
+| `project:value` | Frontmatter `project` | Substring | `project:Clef` |
 | `author:value` | Frontmatter `author` | Substring | `author:Smith` |
 | `rating:n` | Frontmatter `rating` | Exact | `rating:5` |
 | `date:prefix` | Frontmatter `date` (semantic date, written by the user) | Prefix | `date:2025` `date:2025-04` |

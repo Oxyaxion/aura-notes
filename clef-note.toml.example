@@ -1,17 +1,17 @@
-# Aura Notes — configuration
-# Copy to aura_notes.toml and fill in your values.
+# Clef Note — configuration
+# Copy to clef-note.toml and fill in your values.
 
 # Required — web UI password (Argon2 hash).
-# Generate with: ./aura-notes --hash-password "yourpassword"
+# Generate with: ./clef-note --hash-password "yourpassword"
 password = "$argon2id$v=19$..."
 
 # Optional — storage directory.
 # Default: ../storage relative to the binary.
-# Can also be overridden at runtime with: ./aura-notes --storage /mnt/notes
+# Can also be overridden at runtime with: ./clef-note --storage /mnt/notes
 # storage = "/mnt/notes"
 
 # Optional — listening port. Default: 3000.
-# Can also be overridden at runtime with: ./aura-notes --port 8080
+# Can also be overridden at runtime with: ./clef-note --port 8080
 # port = 3000
 
 # Optional — API key for programmatic access (CLI scripts/an, REST, OpenAPI).

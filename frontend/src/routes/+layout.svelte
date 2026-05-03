@@ -7,7 +7,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Aura Notes</title>
+	<title>Clef Note</title>
 </svelte:head>
 
 {@render children()}
