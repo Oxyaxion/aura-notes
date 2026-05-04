@@ -1,7 +1,7 @@
 <div align="center">
   <img src="clef-note-logo.png" alt="Clef Note" width="200" />
   <h1>Clef Note</h1>
-  <p><em>A lightweight, fast, queryable, keyboard-oriented markdonw note-taking app with a minimal footprint.</em></p>
+  <p><em>A lightweight, fast, queryable, keyboard-oriented markdown note-taking app with a minimal footprint.</em></p>
   <img src="clef-note.png" alt="Clef Note screenshot" width="800" />
 </div>
 
