@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-@import 'tailwindcss';
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { font: inherit; cursor: pointer; background: none; border: none; }
+input, textarea, select { font: inherit; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
 
 :root {
 	/* Light — papier chaud, un seul bleu comme accent */
@@ -274,10 +280,6 @@
 /* ── Selection ─────────────────────────────────────── */
 [data-theme="github-dark"] ::selection {
 	background: rgba(56, 139, 253, 0.3);
-}
-
-*, *::before, *::after {
-	box-sizing: border-box;
 }
 
 html, body {
