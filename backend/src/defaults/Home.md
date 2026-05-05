@@ -1,13 +1,10 @@
 ---
 title: Home
-type: index
 pinned: true
 ---
 
-# Home
+# Welcome to Clef Note
 
-## Recent notes
-{recent:10}
+Only standard markdown with frontmatter
 
-## Pinned
-{pinned:true}
+Check out the [[Help]] or run `Ctrl+K` or `/`
