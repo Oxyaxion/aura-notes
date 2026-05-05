@@ -39,7 +39,23 @@
 
 ## Getting Started
 
-### Prerequisites
+### Download pre-built binary
+
+The easiest way to get started — no Rust or Node.js required.
+
+Download the latest binary for your platform from the [Releases page](https://github.com/Oxyaxion/clef-note/releases):
+
+- `clef-note-linux-x86_64` — Linux
+- `clef-note-freebsd-x86_64` — FreeBSD
+
+```bash
+chmod +x clef-note-linux-x86_64
+./clef-note-linux-x86_64 --config clef-note.toml
+```
+
+### Build from source
+
+#### Prerequisites
 
 - [Rust toolchain](https://rustup.rs) — for the backend
 - Node.js ≥ 20 — only needed to build the frontend
@@ -165,6 +181,8 @@ storage/
 ```
 
 A note named `work/meeting` is stored as `storage/notes/work/meeting.md`. The folder can be moved freely — no database, no lock-in.
+
+To import existing notes, copy your `.md` files into `storage/notes/` — they will appear automatically on next startup.
 
 ### Authentication
 
