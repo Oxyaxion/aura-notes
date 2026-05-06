@@ -56,36 +56,15 @@ pub struct RenameBody {
 pub async fn list_notes(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<NoteMeta>>, StatusCode> {
-    let notes_dir = state.storage_path.join("notes");
-    let names: Vec<String> = tokio::task::spawn_blocking(move || {
-        let mut result = Vec::new();
-        let walker = walkdir::WalkDir::new(&notes_dir);
-        for entry in walker.into_iter().filter_map(|e| e.ok()) {
-            let path = entry.path().to_path_buf();
-            if path.extension().and_then(|e| e.to_str()) != Some("md") {
-                continue;
-            }
-            let Ok(rel) = path.strip_prefix(&notes_dir) else { continue };
-            let name = rel.with_extension("").to_string_lossy().replace('\\', "/");
-            result.push(name);
-        }
-        result
+    let db = state.db.clone();
+    let mut notes: Vec<NoteMeta> = tokio::task::spawn_blocking(move || {
+        db.list_all_meta()
+            .into_iter()
+            .map(|(name, pinned, is_template, is_index)| NoteMeta { name, pinned, is_template, is_index })
+            .collect()
     })
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let db = state.db.clone();
-    let meta_map = tokio::task::spawn_blocking(move || db.get_meta_for_list())
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let mut notes: Vec<NoteMeta> = names
-        .into_iter()
-        .map(|name| {
-            let (pinned, is_template, is_index) = meta_map.get(&name).copied().unwrap_or((false, false, false));
-            NoteMeta { name, pinned, is_template, is_index }
-        })
-        .collect();
 
     // Stable alphabetical sort first, then stable pinned-first
     notes.sort_by(|a, b| a.name.cmp(&b.name));
@@ -137,14 +116,13 @@ pub async fn put_note(
         .unwrap_or(0);
     let parsed = crate::frontmatter::parse_note(&content);
     let db = state.db.clone();
-    tokio::task::spawn_blocking(move || db.upsert(&name, &parsed, mtime))
+    let name_for_db = name.clone();
+    tokio::task::spawn_blocking(move || db.upsert(&name_for_db, &parsed, mtime))
         .await
         .ok();
 
-    // Rebuild backlink index
-    let notes_dir = state.storage_path.join("notes");
-    let new_index = crate::backlinks::BacklinkIndex::build(&notes_dir).await;
-    *state.backlink_index.write().await = new_index;
+    // Incremental backlink update — no filesystem walk needed
+    state.backlink_index.write().await.update_note(&name, &content);
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -229,13 +207,12 @@ pub async fn delete_note(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let db = state.db.clone();
-    tokio::task::spawn_blocking(move || db.delete(&name))
+    let name_for_db = name.clone();
+    tokio::task::spawn_blocking(move || db.delete(&name_for_db))
         .await
         .ok();
 
-    let notes_dir = state.storage_path.join("notes");
-    let new_index = crate::backlinks::BacklinkIndex::build(&notes_dir).await;
-    *state.backlink_index.write().await = new_index;
+    state.backlink_index.write().await.remove_note(&name);
 
     Ok(StatusCode::NO_CONTENT)
 }

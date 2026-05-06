@@ -167,6 +167,15 @@ impl Db {
             .collect()
     }
 
+    pub fn list_all_meta(&self) -> Vec<(String, bool, bool, bool)> {
+        let index = self.0.read().unwrap();
+        index.values().map(|n| {
+            let is_template = n.row.note_type.as_deref() == Some("template");
+            let is_index    = n.row.note_type.as_deref() == Some("index");
+            (n.row.name.clone(), n.row.pinned, is_template, is_index)
+        }).collect()
+    }
+
     pub fn get_field_values(&self, field: &str) -> Vec<String> {
         let index = self.0.read().unwrap();
         let mut values: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
