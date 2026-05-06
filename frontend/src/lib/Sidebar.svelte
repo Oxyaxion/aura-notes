@@ -36,6 +36,38 @@
 		localStorage.setItem('aura-sidebar-collapsed', String(collapsed));
 	}
 
+	// ── Resize ────────────────────────────────────────────────────
+	const MIN_WIDTH = 160;
+	const MAX_WIDTH = 480;
+	const DEFAULT_WIDTH = 240;
+
+	let sidebarWidth = $state(
+		typeof localStorage !== 'undefined'
+			? (parseInt(localStorage.getItem('aura-sidebar-width') ?? '', 10) || DEFAULT_WIDTH)
+			: DEFAULT_WIDTH
+	);
+	let dragging = $state(false);
+	let dragStartX = 0;
+	let dragStartWidth = 0;
+
+	function onHandleMouseDown(e: MouseEvent) {
+		e.preventDefault();
+		dragging = true;
+		dragStartX = e.clientX;
+		dragStartWidth = sidebarWidth;
+	}
+
+	function onMouseMove(e: MouseEvent) {
+		if (!dragging) return;
+		sidebarWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, dragStartWidth + e.clientX - dragStartX));
+	}
+
+	function onMouseUp() {
+		if (!dragging) return;
+		dragging = false;
+		localStorage.setItem('aura-sidebar-width', String(sidebarWidth));
+	}
+
 	// --- Tree building ---
 
 	type TreeNode =
@@ -151,11 +183,19 @@
 	}
 </script>
 
+<svelte:window onmousemove={onMouseMove} onmouseup={onMouseUp} />
+
 {#if mobileOpen}
 	<button class="mobile-backdrop" onclick={onMobileClose} aria-label="Close menu"></button>
 {/if}
 
-<aside class="sidebar" class:mobile-open={mobileOpen} class:collapsed>
+<aside
+	class="sidebar"
+	class:mobile-open={mobileOpen}
+	class:collapsed
+	class:dragging
+	style={collapsed ? '' : `width: ${sidebarWidth}px`}
+>
 	<div class="sidebar-head">
 		{#if !collapsed}
 			<span class="vault-name">{vaultName}</span>
@@ -311,6 +351,19 @@
 			</ul>
 		{/if}
 	{/if}
+
+	{#if !collapsed}
+		<button
+			class="resize-handle"
+			onmousedown={onHandleMouseDown}
+			onkeydown={(e) => {
+				const step = e.shiftKey ? 20 : 8;
+				if (e.key === 'ArrowRight') { sidebarWidth = Math.min(MAX_WIDTH, sidebarWidth + step); localStorage.setItem('aura-sidebar-width', String(sidebarWidth)); }
+				if (e.key === 'ArrowLeft')  { sidebarWidth = Math.max(MIN_WIDTH, sidebarWidth - step); localStorage.setItem('aura-sidebar-width', String(sidebarWidth)); }
+			}}
+			aria-label="Resize sidebar"
+		></button>
+	{/if}
 </aside>
 
 <style>
@@ -325,10 +378,33 @@
 		overflow: hidden;
 		flex-shrink: 0;
 		transition: width 200ms ease;
+		position: relative;
 	}
 
 	.sidebar.collapsed {
 		width: 44px;
+	}
+
+	.sidebar.dragging {
+		transition: none;
+		user-select: none;
+	}
+
+	/* ── Resize handle ───────────────────────────────────────── */
+	.resize-handle {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 4px;
+		height: 100%;
+		cursor: ew-resize;
+		z-index: 10;
+		transition: background 150ms;
+	}
+
+	.resize-handle:hover,
+	.dragging .resize-handle {
+		background: color-mix(in srgb, var(--accent) 40%, transparent);
 	}
 
 	/* ── Header ──────────────────────────────────────────── */
