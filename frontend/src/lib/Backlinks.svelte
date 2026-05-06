@@ -9,66 +9,62 @@
 	let { note, onNavigate }: Props = $props();
 
 	let backlinks = $state<string[]>([]);
+	let open = $state(false);
 
 	$effect(() => {
 		const n = note;
 		let cancelled = false;
+		open = false;
 		getBacklinks(n)
 			.then((r) => { if (!cancelled) backlinks = r.backlinks; })
 			.catch(() =>  { if (!cancelled) backlinks = []; });
 		return () => { cancelled = true; };
 	});
+
+	function label(name: string): string {
+		return name.split('/').pop() ?? name;
+	}
+
+	function folder(name: string): string {
+		const parts = name.split('/');
+		return parts.length > 1 ? parts.slice(0, -1).join('/') + '/' : '';
+	}
 </script>
 
 {#if backlinks.length > 0}
 	<aside class="backlinks">
-		<header>
-			<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-				<path d="M6 4l-4 4 4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-				<path d="M4 8h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-				<path d="M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+		<button class="bl-toggle" onclick={() => (open = !open)} aria-expanded={open}>
+			<svg class="bl-chevron" class:open width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+				<path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 			</svg>
-			<span>{backlinks.length} backlink{backlinks.length > 1 ? 's' : ''}</span>
-		</header>
-		<ul>
-			{#each backlinks as bl}
-				<li>
-					<button onclick={() => onNavigate(bl)}>
-						<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-							<path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-							<path d="M10 2v3h3" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-						</svg>
-						{bl}
-					</button>
-				</li>
-			{/each}
-		</ul>
+			<svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+				<path d="M5 3l-3 4 3 4M9 3l3 4-3 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+			{backlinks.length} backlink{backlinks.length > 1 ? 's' : ''}
+		</button>
+
+		{#if open}
+			<ul>
+				{#each backlinks as bl (bl)}
+					<li>
+						<button onclick={() => onNavigate(bl)} title={bl}>
+							{#if folder(bl)}<span class="bl-folder">{folder(bl)}</span>{/if}<span class="bl-name">{label(bl)}</span>
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</aside>
 {/if}
 
 <style>
 	.backlinks {
 		flex-shrink: 0;
-		border-top: 1px solid var(--border);
-		background: var(--sidebar-bg);
-		padding: 0.75rem 3rem;
-	}
-
-	header {
+		padding: 0.5rem 3rem 0.7rem;
 		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		font-size: 0.78rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--muted);
-		margin-bottom: 0.5rem;
-	}
-
-	header svg {
-		width: 14px;
-		height: 14px;
+		flex-direction: column;
+		gap: 0.5rem;
+		border-top: 1px solid var(--border);
 	}
 
 	ul {
@@ -77,32 +73,66 @@
 		padding: 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.4rem;
+		gap: 0.3rem;
 	}
 
-	button {
+	.bl-toggle {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
-		background: var(--bg);
-		border: 1px solid var(--border);
-		border-radius: 6px;
-		padding: 0.25rem 0.6rem;
-		font-size: 0.85rem;
-		font-family: inherit;
-		color: var(--text);
-		cursor: pointer;
-		transition: background 80ms, border-color 80ms;
-	}
-
-	button:hover {
-		background: var(--border);
-	}
-
-	button svg {
-		width: 13px;
-		height: 13px;
+		gap: 0.3rem;
+		background: none;
+		border: none;
+		padding: 0.1rem 0.25rem;
+		font: inherit;
+		font-size: 0.72rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
 		color: var(--muted);
+		cursor: pointer;
+		white-space: nowrap;
 		flex-shrink: 0;
+		transition: color 80ms;
+	}
+
+	.bl-toggle:hover {
+		color: var(--text);
+	}
+
+	.bl-chevron {
+		transition: transform 160ms ease;
+		transform: rotate(-90deg);
+	}
+
+	.bl-chevron.open {
+		transform: rotate(0deg);
+	}
+
+	ul button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.15rem;
+		background: color-mix(in srgb, var(--accent) 8%, transparent);
+		border: none;
+		border-radius: 4px;
+		padding: 0.15rem 0.5rem;
+		font: inherit;
+		font-size: 0.82rem;
+		cursor: pointer;
+		color: var(--accent);
+		transition: background 80ms;
+	}
+
+	ul button:hover {
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
+	}
+
+	.bl-folder {
+		color: color-mix(in srgb, var(--accent) 55%, var(--muted));
+		font-size: 0.75rem;
+	}
+
+	.bl-name {
+		color: var(--accent);
 	}
 </style>

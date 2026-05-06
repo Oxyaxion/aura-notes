@@ -95,6 +95,16 @@ pub async fn get_backlinks(
     let index = state.backlink_index.read().await;
     let mut backlinks = index.get(&name);
 
+    // Also look up by basename: [[Note Name]] links to Dev/Note Name
+    let basename = name.split('/').next_back().unwrap_or(&name);
+    if basename != name {
+        for bl in index.get(basename) {
+            if !backlinks.contains(&bl) {
+                backlinks.push(bl);
+            }
+        }
+    }
+
     // Also gather backlinks via aliases
     let db = state.db.clone();
     let name_clone = name.clone();

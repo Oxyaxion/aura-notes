@@ -47,6 +47,7 @@
 	let currentSettings = $state<AppSettings>({ ...DEFAULT });
 	let navHistory = $state<string[]>([]);
 	let navIndex = $state(-1);
+	let focusMode = $state(false);
 
 
 	const noteMarkdown = $derived(serializeFrontmatter(noteFrontmatter) + noteContent);
@@ -260,6 +261,7 @@
 			if (e.code === 'KeyH') { e.preventDefault(); goHome(); }
 			else if (e.code === 'KeyP') { e.preventDefault(); goBack(); }
 			else if (e.code === 'KeyN') { e.preventDefault(); goForward(); }
+			else if (e.code === 'KeyF') { e.preventDefault(); focusMode = !focusMode; }
 		}
 	}
 </script>
@@ -310,6 +312,26 @@
 			</svg>
 		</button>
 		<span class="topbar-title">{selected ?? 'Notes'}</span>
+		{#if selected}
+			<button
+				class="topbar-btn"
+				class:topbar-locked={isLocked}
+				onclick={toggleLock}
+				aria-label={isLocked ? 'Unlock note' : 'Lock note'}
+			>
+				{#if isLocked}
+					<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+						<rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				{:else}
+					<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+						<rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M7 9V6a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				{/if}
+			</button>
+		{/if}
 		<button class="topbar-btn" onclick={openPalette} aria-label="Search">
 			<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
 				<circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
@@ -326,13 +348,14 @@
 		{vaultName}
 		mobileOpen={sidebarOpen}
 		startCreating={creatingFromPalette}
+		hidden={focusMode && !isMobile}
 		onSelect={selectNote}
 		onNew={createNote}
 		onMobileClose={() => (sidebarOpen = false)}
 		onCreateStarted={() => (creatingFromPalette = false)}
 	/>
 
-	<main class="main">
+	<main class="main" class:focus-mode={focusMode}>
 		{#if metaPageOpen}
 			<MetaPage onClose={() => (metaPageOpen = false)} />
 		{:else if selected}
@@ -363,6 +386,21 @@
 						{#if saving}
 							<span class="saving-label">Saving…</span>
 						{/if}
+						<button
+							onclick={() => (focusMode = !focusMode)}
+							title={focusMode ? 'Exit focus mode (Ctrl+Shift+F)' : 'Focus mode (Ctrl+Shift+F)'}
+							class="focus-btn"
+							class:active={focusMode}
+							aria-label={focusMode ? 'Exit focus mode' : 'Focus mode'}
+						>
+							<svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+								{#if focusMode}
+									<path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								{:else}
+									<path d="M7 3H3v4M13 3h4v4M7 17H3v-4M13 17h4v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								{/if}
+							</svg>
+						</button>
 						<button
 							onclick={toggleLock}
 							title={isLocked ? 'Unlock note' : 'Lock note (read-only)'}
@@ -418,17 +456,21 @@
 				{/if}
 			{/if}
 
-			{#if showToc}
+			{#if showToc && !focusMode}
 				<TableOfContents {headings} onDisable={disableToc} />
 			{/if}
-			{#key selected}
-				<FrontmatterEditor
-					frontmatter={noteFrontmatter}
-					onChange={onFrontmatterChange}
-				/>
-				<Editor {noteContent} noteNames={notes.map(n => n.name)} {onEdit} {isIndex} {isLocked} />
-			{/key}
-			<Backlinks note={selected} onNavigate={selectNote} />
+			<div class="editor-area" class:focus-mode={focusMode}>
+				{#key selected}
+					<FrontmatterEditor
+						frontmatter={noteFrontmatter}
+						onChange={onFrontmatterChange}
+					/>
+					<Editor {noteContent} noteNames={notes.map(n => n.name)} {onEdit} {isIndex} {isLocked} />
+				{/key}
+			</div>
+			{#if !focusMode}
+				<Backlinks note={selected} onNavigate={selectNote} />
+			{/if}
 		{:else}
 			<div class="empty-state">
 				<p>Select a note or create one</p>
@@ -499,6 +541,10 @@
 		background: var(--border);
 	}
 
+	.topbar-locked {
+		color: #e07b39;
+	}
+
 	.topbar-title {
 		flex: 1;
 		font-size: 1.05rem;
@@ -565,6 +611,54 @@
 	.cmd-btn kbd {
 		font-family: inherit;
 		font-size: 0.7rem;
+	}
+
+
+	/* ── Focus mode ─────────────────────────────────────────────── */
+	.editor-area {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0; /* allows flex child to shrink and scroll correctly */
+		min-width: 0;
+	}
+
+	.editor-area.focus-mode {
+		max-width: clamp(760px, 75vw, 1200px);
+		width: 100%;
+		margin: 0 auto;
+		overflow: hidden;
+	}
+
+	.editor-area.focus-mode :global(.editor-wrap) {
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.editor-area.focus-mode :global(.editor-wrap::-webkit-scrollbar) {
+		display: none;
+	}
+
+	.focus-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--muted);
+		padding: 0.25rem;
+		border-radius: 5px;
+		display: flex;
+		align-items: center;
+		opacity: 0.4;
+		transition: opacity 0.15s, color 0.15s;
+	}
+
+	.focus-btn:hover {
+		opacity: 1;
+	}
+
+	.focus-btn.active {
+		opacity: 1;
+		color: var(--accent);
 	}
 
 	.lock-btn {

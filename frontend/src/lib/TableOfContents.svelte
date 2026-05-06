@@ -144,6 +144,7 @@
 
 	.toc-list li {
 		margin: 0;
+		display: flex;
 	}
 
 	.toc-item {
@@ -153,14 +154,22 @@
 		font-size: 0.84rem;
 		font-family: inherit;
 		color: var(--text);
-		padding: 0.18rem 0;
+		padding: 0.3rem 0;
 		text-align: left;
 		opacity: 0.75;
 		transition: opacity 100ms;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		max-width: 100%;
+		width: 100%;
+		display: block;
+	}
+
+	@media (max-width: 640px) {
+		.toc-item {
+			padding: 0.6rem 0;
+			font-size: 0.9rem;
+		}
 	}
 
 	.toc-item:hover {

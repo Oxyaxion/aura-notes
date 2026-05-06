@@ -8,13 +8,14 @@
 		vaultName?: string;
 		mobileOpen?: boolean;
 		startCreating?: boolean;
+		hidden?: boolean;
 		onSelect: (name: string) => void;
 		onNew: (name: string) => void;
 		onMobileClose?: () => void;
 		onCreateStarted?: () => void;
 	}
 
-	let { notes, selected, vaultName = 'Notes', mobileOpen = false, startCreating = false, onSelect, onNew, onMobileClose, onCreateStarted }: Props = $props();
+	let { notes, selected, vaultName = 'Notes', mobileOpen = false, startCreating = false, hidden = false, onSelect, onNew, onMobileClose, onCreateStarted }: Props = $props();
 
 	$effect(() => {
 		if (startCreating) {
@@ -194,7 +195,8 @@
 	class:mobile-open={mobileOpen}
 	class:collapsed
 	class:dragging
-	style={collapsed ? '' : `width: ${sidebarWidth}px`}
+	class:hidden
+	style={collapsed || hidden ? '' : `width: ${sidebarWidth}px`}
 >
 	<div class="sidebar-head">
 		{#if !collapsed}
@@ -388,6 +390,12 @@
 	.sidebar.dragging {
 		transition: none;
 		user-select: none;
+	}
+
+	.sidebar.hidden {
+		width: 0 !important;
+		border-right: none;
+		overflow: hidden;
 	}
 
 	/* ── Resize handle ───────────────────────────────────────── */
