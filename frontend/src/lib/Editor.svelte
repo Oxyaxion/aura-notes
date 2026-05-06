@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { Editor } from '@tiptap/core';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { Editor, InputRule } from '@tiptap/core';
 	import StarterKit from '@tiptap/starter-kit';
 	import Placeholder from '@tiptap/extension-placeholder';
 	import Image from '@tiptap/extension-image';
@@ -105,15 +105,18 @@
 		};
 	}
 	import Typography from '@tiptap/extension-typography';
+	import Link from '@tiptap/extension-link';
 	import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
 	import { TaskListMd, TaskItemMd } from './taskExtensions';
 	import { WikiLink } from './wikiLink';
 	import { createWikiLinkSuggestion } from './wikiLinkSuggestion';
 	import { getAliases, uploadAsset } from './api';
 	import { SlashCommand } from './slashCommands';
+	import { EmojiShortcodes } from './emojiShortcodes';
 	import { QueryBlock } from './queryBlock';
 	import { DrawingBlock } from './drawingBlock';
 	import { Extension } from '@tiptap/core';
+	import BubbleMenu from './BubbleMenu.svelte';
 	import 'tippy.js/dist/tippy.css';
 
 	// ── Resizable image NodeView ───────────────────────────────────────────────
@@ -300,6 +303,78 @@
 	let tableActive = $state(false);
 	let toolbarStyle = $state('');
 
+	// ── Link prompt ────────────────────────────────────────────────────────────
+	let linkPromptOpen = $state(false);
+	let linkPromptX = $state(0);
+	let linkPromptY = $state(0);
+	let linkPromptUrl = $state('');
+	let linkPromptText = $state('');
+	let linkHasSelection = $state(false);
+	let linkHasExisting = $state(false);
+	let linkUrlInput = $state<HTMLInputElement | null>(null);
+	let linkTextInput = $state<HTMLInputElement | null>(null);
+
+	function applyLink() {
+		if (!editor) return;
+		linkPromptOpen = false;
+		const url = linkPromptUrl.trim();
+		if (!url) {
+			if (linkHasExisting) editor.chain().focus().unsetLink().run();
+			else editor.chain().focus().run();
+			return;
+		}
+		const href = /^https?:\/\//.test(url) ? url : `https://${url}`;
+		if (linkHasSelection) {
+			editor.chain().focus().setLink({ href }).run();
+		} else if (linkHasExisting) {
+			// Cursor inside an existing link — update the whole link span
+			editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+		} else {
+			const label = linkPromptText.trim() || href;
+			editor.chain().focus().insertContent({ type: 'text', text: label, marks: [{ type: 'link', attrs: { href } }] }).run();
+		}
+	}
+
+	function removeLink() {
+		if (!editor) return;
+		linkPromptOpen = false;
+		if (linkHasSelection) {
+			editor.chain().focus().unsetLink().run();
+		} else {
+			editor.chain().focus().extendMarkRange('link').unsetLink().run();
+		}
+	}
+
+	// ── Link tooltip (shown when cursor rests inside a link) ───────────────────
+	let linkTooltipOpen = $state(false);
+	let linkTooltipX = $state(0);
+	let linkTooltipY = $state(0);
+	let linkTooltipHref = $state('');
+
+	function syncLinkTooltip() {
+		if (!editor) return;
+		const { from, empty } = editor.state.selection;
+		if (!empty || !editor.isActive('link')) {
+			linkTooltipOpen = false;
+			return;
+		}
+		// Find the <a> element in the DOM to anchor the tooltip to the full link span
+		const { node } = editor.view.domAtPos(from);
+		let el: Node | null = node instanceof Text ? node.parentElement : node;
+		while (el && !(el instanceof HTMLAnchorElement)) el = (el as Element).parentElement;
+		if (el instanceof HTMLAnchorElement) {
+			const rect = el.getBoundingClientRect();
+			linkTooltipX = rect.left;
+			linkTooltipY = rect.bottom + 4;
+		} else {
+			const coords = editor.view.coordsAtPos(from);
+			linkTooltipX = coords.left;
+			linkTooltipY = coords.bottom + 4;
+		}
+		linkTooltipHref = editor.getAttributes('link').href ?? '';
+		linkTooltipOpen = true;
+	}
+
 	// DOM-level handlers stored here so onDestroy can remove them
 	let _imgPasteHandler: ((e: ClipboardEvent) => void) | null = null;
 	let _imgDropHandler: ((e: DragEvent) => void) | null = null;
@@ -358,9 +433,54 @@
 				TableCell,
 				TableHeader,
 				Typography,
+				Link.configure({
+					openOnClick: false,
+					autolink: true,
+					linkOnPaste: true,
+				}).extend({
+					// autolink:true sets inclusive:true, which causes typing after a link
+					// to continue adding link marks. Override to always be non-inclusive.
+					inclusive() { return false; },
+					addInputRules() {
+						return [
+							new InputRule({
+								find: /\[([^\]]+)\]\(([^)\s]+)\)$/,
+								handler: ({ chain, range, match }) => {
+									const label = match[1];
+									const url = match[2];
+									const href = /^https?:\/\//.test(url) ? url : `https://${url}`;
+									chain()
+										.deleteRange(range)
+										.insertContent({ type: 'text', text: label, marks: [{ type: 'link', attrs: { href } }] })
+										.run();
+								},
+							}),
+						];
+					},
+					addKeyboardShortcuts() {
+						return {
+							'Mod-Shift-k': () => {
+								const ed = this.editor;
+								const { from, to, empty } = ed.state.selection;
+								const coords = ed.view.coordsAtPos(from);
+								ed.view.dom.dispatchEvent(new CustomEvent('link-prompt', {
+									bubbles: true,
+									detail: {
+										x: coords.left,
+										y: coords.bottom + 8,
+										currentUrl: ed.getAttributes('link').href ?? '',
+										selectedText: empty ? '' : ed.state.doc.textBetween(from, to),
+									},
+								}));
+								return true;
+							},
+						};
+					},
+				}),
 				WikiLink,
 				WikiLinkSuggestion,
 				SlashCommand,
+				EmojiShortcodes,
 				QueryBlock,
 				DrawingBlock,
 				ExitBlockquote,
@@ -379,11 +499,12 @@
 			},
 		});
 
-		editor.on('selectionUpdate', syncTableToolbar);
+		editor.on('selectionUpdate', () => { syncTableToolbar(); syncLinkTooltip(); });
 		// Defer to avoid mutating $state during Svelte's synchronous commit phase
 		// (blur fires when Svelte tears down the toolbar DOM, which triggers state_unsafe_mutation)
-		editor.on('blur', () => { setTimeout(() => { tableActive = false; }, 0); });
+		editor.on('blur', () => { setTimeout(() => { tableActive = false; linkTooltipOpen = false; }, 0); });
 		document.addEventListener('insert-image', onInsertImageEvent);
+		element.addEventListener('link-prompt', onLinkPromptEvent);
 
 		// Capture-phase listeners run before ProseMirror sees the event.
 		// Return early (without stopImmediatePropagation) for non-image pastes so
@@ -434,8 +555,24 @@
 		editor.setEditable(!isLocked);
 	});
 
+	async function onLinkPromptEvent(e: Event) {
+		linkTooltipOpen = false;
+		const { x, y, currentUrl, selectedText } = (e as CustomEvent).detail;
+		linkPromptUrl = currentUrl ?? '';
+		linkPromptText = '';
+		linkHasExisting = !!currentUrl;
+		linkHasSelection = !!selectedText;
+		linkPromptX = x;
+		linkPromptY = y;
+		linkPromptOpen = true;
+		await tick();
+		linkUrlInput?.focus();
+		linkUrlInput?.select();
+	}
+
 	onDestroy(() => {
 		document.removeEventListener('insert-image', onInsertImageEvent);
+		element?.removeEventListener('link-prompt', onLinkPromptEvent);
 		if (_imgPasteHandler) element.removeEventListener('paste', _imgPasteHandler as EventListener, true);
 		if (_imgDropHandler) element.removeEventListener('drop', _imgDropHandler as EventListener, true);
 		editor?.destroy();
@@ -445,6 +582,75 @@
 </script>
 
 <div bind:this={element} class="editor-wrap" class:index-page={isIndex} class:locked={isLocked}></div>
+
+{#if editorReady && editor}
+	<BubbleMenu {editor} />
+{/if}
+
+{#if linkTooltipOpen}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="link-tooltip" style="left:{linkTooltipX}px;top:{linkTooltipY}px;" onmousedown={(e) => e.preventDefault()}>
+		<span class="lt-url" title={linkTooltipHref}>
+			{linkTooltipHref.length > 40 ? linkTooltipHref.slice(0, 40) + '…' : linkTooltipHref}
+		</span>
+		<span class="lt-sep"></span>
+		<button onclick={() => window.open(linkTooltipHref, '_blank', 'noopener noreferrer')} title="Open">↗</button>
+		<button onmousedown={(e) => {
+			e.preventDefault();
+			linkTooltipOpen = false;
+			const { from } = editor!.state.selection;
+			const coords = editor!.view.coordsAtPos(from);
+			editor!.view.dom.dispatchEvent(new CustomEvent('link-prompt', {
+				bubbles: true,
+				detail: { x: coords.left, y: coords.bottom + 8, currentUrl: linkTooltipHref, selectedText: '' },
+			}));
+		}} title="Edit">Edit</button>
+		<button onmousedown={(e) => {
+			e.preventDefault();
+			editor!.chain().focus().extendMarkRange('link').unsetLink().run();
+			linkTooltipOpen = false;
+		}} title="Remove" class="lt-remove">×</button>
+	</div>
+{/if}
+
+{#if linkPromptOpen}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="link-backdrop" onmousedown={() => { linkPromptOpen = false; editor?.chain().focus().run(); }}></div>
+	<div class="link-prompt" style="left:{linkPromptX}px; top:{linkPromptY}px;">
+		<input
+			bind:this={linkUrlInput}
+			bind:value={linkPromptUrl}
+			type="url"
+			placeholder="https://…"
+			autocomplete="off"
+			spellcheck={false}
+			onkeydown={(e) => {
+				if (e.key === 'Enter') { e.preventDefault(); linkHasSelection ? applyLink() : linkTextInput?.focus(); }
+				if (e.key === 'Escape') { linkPromptOpen = false; editor?.chain().focus().run(); }
+			}}
+		/>
+		{#if !linkHasSelection}
+			<input
+				bind:this={linkTextInput}
+				bind:value={linkPromptText}
+				type="text"
+				placeholder="Display text (optional)"
+				autocomplete="off"
+				spellcheck={false}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+					if (e.key === 'Escape') { linkPromptOpen = false; editor?.chain().focus().run(); }
+				}}
+			/>
+		{/if}
+		<div class="lp-actions">
+			<button class="lp-apply" onmousedown={(e) => { e.preventDefault(); applyLink(); }}>Ajouter</button>
+			{#if linkHasExisting}
+				<button class="lp-remove" onmousedown={(e) => { e.preventDefault(); removeLink(); }}>Supprimer</button>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 {#if tableActive && editorReady}
 	<div class="table-toolbar" role="toolbar" tabindex="-1" aria-label="Table actions" style={toolbarStyle} onmousedown={(e) => e.preventDefault()}>
@@ -541,6 +747,128 @@
 
 	/* Paragraphs */
 	:global(.tiptap-editor p) { margin: 0 0 0.6rem; }
+
+	/* Links */
+	:global(.tiptap-editor a) {
+		color: var(--accent);
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		cursor: pointer;
+	}
+	:global(.tiptap-editor a:hover) { opacity: 0.8; }
+
+	/* Link tooltip */
+	.link-tooltip {
+		position: fixed;
+		z-index: 200;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		padding: 3px 6px;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+		font-size: 0.75rem;
+		white-space: nowrap;
+		max-width: 380px;
+	}
+
+	.lt-url {
+		color: var(--muted);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 200px;
+		display: inline-block;
+	}
+
+	.lt-sep {
+		width: 1px;
+		height: 14px;
+		background: var(--border);
+		flex-shrink: 0;
+		margin: 0 3px;
+	}
+
+	.link-tooltip button {
+		border: none;
+		background: none;
+		color: var(--text);
+		cursor: pointer;
+		padding: 2px 5px;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-family: inherit;
+	}
+
+	.link-tooltip button:hover { background: var(--sidebar-bg); }
+	.link-tooltip button.lt-remove { color: #e57373; }
+	.link-tooltip button.lt-remove:hover { background: color-mix(in srgb, #e57373 10%, transparent); }
+
+	/* Link prompt */
+	.link-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 299;
+	}
+
+	.link-prompt {
+		position: fixed;
+		z-index: 300;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.5rem;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.14);
+		min-width: 280px;
+	}
+
+	.link-prompt input {
+		background: var(--sidebar-bg);
+		border: 1px solid var(--border);
+		border-radius: 5px;
+		padding: 0.28rem 0.55rem;
+		font-size: 0.83rem;
+		color: var(--text);
+		font-family: inherit;
+		outline: none;
+		width: 100%;
+	}
+
+	.link-prompt input:focus { border-color: var(--accent); }
+
+	.lp-actions {
+		display: flex;
+		gap: 0.3rem;
+	}
+
+	.lp-apply, .lp-remove {
+		border-radius: 5px;
+		padding: 0.22rem 0.7rem;
+		font-size: 0.78rem;
+		font-family: inherit;
+		cursor: pointer;
+		white-space: nowrap;
+		border: 1px solid var(--border);
+	}
+
+	.lp-apply {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: #fff;
+	}
+
+	.lp-apply:hover { opacity: 0.88; }
+
+	.lp-remove {
+		background: none;
+		color: #e57373;
+	}
+
+	.lp-remove:hover { background: color-mix(in srgb, #e57373 10%, transparent); }
 	:global(.tiptap-editor p.is-editor-empty:first-child::before) {
 		content: attr(data-placeholder);
 		float: left;

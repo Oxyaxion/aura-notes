@@ -1,4 +1,5 @@
 import { Extension } from '@tiptap/core';
+import { EMOJI_MAP } from './emojiShortcodes';
 import Suggestion, {
 	type SuggestionProps,
 	type SuggestionKeyDownProps,
@@ -81,6 +82,14 @@ export const ALL_ITEMS: CommandItem[] = [
 
 	// — Special blocks —
 	{
+		title: 'Inline code',
+		description: 'Monospace code snippet',
+		icon: '``',
+		keywords: ['code', 'inline', 'monospace', 'backtick'],
+		command: ({ editor, range }) =>
+			editor.chain().focus().deleteRange(range).toggleCode().run(),
+	},
+	{
 		title: 'Code block',
 		description: 'Code with syntax highlighting',
 		icon: '</>',
@@ -143,6 +152,23 @@ export const ALL_ITEMS: CommandItem[] = [
 			editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
 	},
 
+	// — Links —
+	{
+		title: 'Link',
+		description: 'Insert an external URL',
+		icon: '🔗',
+		keywords: ['link', 'url', 'href', 'http', 'web', 'externe'],
+		command: ({ editor, range }) => {
+			editor.chain().focus().deleteRange(range).run();
+			const { from } = editor.state.selection;
+			const coords = editor.view.coordsAtPos(from);
+			editor.view.dom.dispatchEvent(new CustomEvent('link-prompt', {
+				bubbles: true,
+				detail: { x: coords.left, y: coords.bottom + 8, currentUrl: '', selectedText: '' },
+			}));
+		},
+	},
+
 	// — Zettelkasten —
 	{
 		title: 'Wiki link',
@@ -179,6 +205,17 @@ export const ALL_ITEMS: CommandItem[] = [
 			editor.chain().focus().deleteRange(range).insertContent({ type: 'drawingBlock', attrs: { name } }).run();
 		},
 	},
+
+	// — Emojis (visible only when filtering) —
+	...Object.entries(EMOJI_MAP).map(([code, emoji]) => ({
+		title: `${emoji}  ${code}`,
+		description: `Insert ${emoji}`,
+		icon: emoji,
+		keywords: ['emoji', 'icon', 'ico', code],
+		onlyWhenFiltered: true as const,
+		command: ({ editor, range }: { editor: Editor; range: Range }) =>
+			editor.chain().focus().deleteRange(range).insertContent(emoji).run(),
+	})),
 
 	// — Useful insertions —
 	{
@@ -261,6 +298,7 @@ function buildMenu(onSelect: (item: CommandItem) => void) {
 			if (items.length === 0) return;
 			selectedIndex = (selectedIndex + delta + items.length) % items.length;
 			render();
+			el.querySelectorAll('.slash-menu-item')[selectedIndex]?.scrollIntoView({ block: 'nearest' });
 		},
 		select(): CommandItem | null {
 			return items[selectedIndex] ?? null;
