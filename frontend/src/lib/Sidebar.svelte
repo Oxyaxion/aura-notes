@@ -25,6 +25,8 @@
 
 	let newName = $state('');
 	let creating = $state(false);
+	let filterQuery = $state('');
+	let filterInput = $state<HTMLInputElement | null>(null);
 	let collapsed = $state(
 		typeof localStorage !== 'undefined' && localStorage.getItem('aura-sidebar-collapsed') === 'true'
 	);
@@ -120,6 +122,24 @@
 	let tree = $derived(buildTree(notes.filter(n => !n.is_template && !n.is_index)));
 	let items = $derived(flatten(tree, 0));
 
+	const q = $derived(filterQuery.trim().toLowerCase());
+	let filteredNotes = $derived(
+		q
+			? notes
+				.filter(n => !n.is_template && n.name.toLowerCase().includes(q))
+				.sort((a, b) => a.name.localeCompare(b.name))
+			: null
+	);
+
+	function highlight(text: string, query: string): string {
+		const idx = text.toLowerCase().indexOf(query);
+		if (idx === -1) return esc(text);
+		return esc(text.slice(0, idx)) + '<mark>' + esc(text.slice(idx, idx + query.length)) + '</mark>' + esc(text.slice(idx + query.length));
+	}
+	function esc(s: string): string {
+		return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	}
+
 	function focus(el: HTMLElement) { el.focus(); }
 
 	function submitNew() {
@@ -191,54 +211,105 @@
 			</form>
 		{/if}
 
-		{#if indexNotes.length > 0}
-			<div class="index-section">
-				{#each indexNotes as note (note.name)}
-					<button
-						onclick={() => onSelect(note.name)}
-						class="index-btn"
-						class:active={selected === note.name}
-						title={note.name}
-					>
-						<svg class="index-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-							<rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
-							<rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
-							<rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
-							<rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
-						</svg>
-						{note.name.split('/').pop()}
-					</button>
-				{/each}
-			</div>
-			<div class="index-divider"></div>
-		{/if}
+		<div class="filter-bar">
+			<svg class="filter-icon" width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+				<circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+				<path d="M10 10l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+			</svg>
+			<input
+				bind:this={filterInput}
+				bind:value={filterQuery}
+				placeholder="Filter…"
+				class="filter-input"
+				aria-label="Filter notes"
+				onkeydown={(e) => {
+					if (e.key === 'Escape') { filterQuery = ''; e.preventDefault(); }
+					if (e.key === 'Enter' && filteredNotes && filteredNotes.length > 0) {
+						onSelect(filteredNotes[0].name);
+						filterQuery = '';
+					}
+				}}
+			/>
+			{#if filterQuery}
+				<button class="filter-clear" onclick={() => { filterQuery = ''; filterInput?.focus(); }} aria-label="Clear filter">
+					<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+						<path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			{/if}
+		</div>
 
-		<ul class="note-list">
-			{#each items as item (item.kind + ':' + item.path)}
-				<li>
-					{#if item.kind === 'folder'}
+		{#if !filterQuery}
+			{#if indexNotes.length > 0}
+				<div class="index-section">
+					{#each indexNotes as note (note.name)}
 						<button
-							onclick={() => toggleFolder(item.path)}
-							class="folder-btn"
-							style="padding-left: calc(1rem + {item.depth * 0.9}rem);"
+							onclick={() => onSelect(note.name)}
+							class="index-btn"
+							class:active={selected === note.name}
+							title={note.name}
 						>
-							<span class="folder-chevron">{item.open ? '▼' : '▶'}</span>
-							{item.label}
+							<svg class="index-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+								<rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+								<rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+								<rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+								<rect x="7" y="7" width="4" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+							</svg>
+							{note.name.split('/').pop()}
 						</button>
-					{:else}
-						<button
-							onclick={() => onSelect(item.path)}
-							class="note-btn"
-							class:active={selected === item.path}
-							style="padding-left: calc(1rem + {item.depth * 0.9}rem);"
-						>
-							{#if item.pinned}<span class="pin-dot" aria-hidden="true"></span>{/if}
-							{item.label}
-						</button>
-					{/if}
-				</li>
-			{/each}
-		</ul>
+					{/each}
+				</div>
+				<div class="index-divider"></div>
+			{/if}
+
+			<ul class="note-list">
+				{#each items as item (item.kind + ':' + item.path)}
+					<li>
+						{#if item.kind === 'folder'}
+							<button
+								onclick={() => toggleFolder(item.path)}
+								class="folder-btn"
+								style="padding-left: calc(1rem + {item.depth * 0.9}rem);"
+							>
+								<span class="folder-chevron">{item.open ? '▼' : '▶'}</span>
+								{item.label}
+							</button>
+						{:else}
+							<button
+								onclick={() => onSelect(item.path)}
+								class="note-btn"
+								class:active={selected === item.path}
+								style="padding-left: calc(1rem + {item.depth * 0.9}rem);"
+							>
+								{#if item.pinned}<span class="pin-dot" aria-hidden="true"></span>{/if}
+								{item.label}
+							</button>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<ul class="note-list">
+				{#if filteredNotes && filteredNotes.length > 0}
+					{#each filteredNotes as note (note.name)}
+						{@const label = note.name.split('/').pop()!}
+						{@const folder = note.name.includes('/') ? note.name.split('/').slice(0, -1).join('/') : ''}
+						<li>
+							<button
+								onclick={() => { onSelect(note.name); filterQuery = ''; }}
+								class="note-btn filter-result"
+								class:active={selected === note.name}
+							>
+								<span class="filter-label">{@html highlight(label, q)}</span>
+								{#if folder}<span class="filter-path">{folder.split('/').pop()}</span>{/if}
+							</button>
+						</li>
+					{/each}
+				{:else}
+					<li class="filter-empty">No results</li>
+				{/if}
+			</ul>
+		{/if}
 	{/if}
 </aside>
 
@@ -334,6 +405,87 @@
 
 	.create-input:focus {
 		border-color: var(--accent);
+	}
+
+	/* ── Filter bar ─────────────────────────────────────── */
+	.filter-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.35rem 0.6rem 0.35rem 0.75rem;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
+	}
+
+	.filter-icon {
+		color: var(--muted);
+		flex-shrink: 0;
+		opacity: 0.6;
+	}
+
+	.filter-input {
+		flex: 1;
+		background: none;
+		border: none;
+		outline: none;
+		font: inherit;
+		font-size: 0.85rem;
+		color: var(--text);
+		min-width: 0;
+	}
+
+	.filter-input::placeholder {
+		color: var(--muted);
+		opacity: 0.6;
+	}
+
+	.filter-clear {
+		color: var(--muted);
+		padding: 2px;
+		border-radius: 3px;
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+		opacity: 0.6;
+		transition: opacity 80ms;
+	}
+
+	.filter-clear:hover {
+		opacity: 1;
+	}
+
+	/* ── Filter results ──────────────────────────────────── */
+	.filter-result {
+		padding-left: 1rem !important;
+		gap: 0;
+	}
+
+	.filter-label {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:global(.filter-label mark) {
+		background: color-mix(in srgb, var(--accent) 25%, transparent);
+		color: inherit;
+		border-radius: 2px;
+	}
+
+	.filter-path {
+		font-size: 0.72rem;
+		color: var(--muted);
+		white-space: nowrap;
+		flex-shrink: 0;
+		padding-left: 0.4rem;
+	}
+
+	.filter-empty {
+		padding: 0.5rem 1rem;
+		font-size: 0.82rem;
+		color: var(--muted);
+		font-style: italic;
 	}
 
 	/* ── Index pages section ─────────────────────────────── */
