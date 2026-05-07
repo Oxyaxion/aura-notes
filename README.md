@@ -20,6 +20,7 @@
 ## Road map
 
 - OpenID Authentication
+- Dashboard system
 - git synchronisation
 - Any ideas ?
 
