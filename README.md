@@ -16,13 +16,12 @@
 - Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}`. Results update in real time, a really cool feature.
 - API to queries from the CLI (`scripts/an`).
 - Keyboard-first: `/` for blocks, `Ctrl+K` for commands.
-- Vibe-coded app \m/ Don't be afraid, give it a try and check how powerfull it is !
 
 ## Road map
 
 - OpenID Authentication
 - git synchronisation
-- ..
+- Any ideas ?
 
 ---
 
