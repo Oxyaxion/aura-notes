@@ -78,9 +78,10 @@
 	});
 
 	onMount(() => {
-		window.addEventListener('auth:expired', () => { loggedIn = false; });
+		const onAuthExpired = () => { loggedIn = false; };
+		window.addEventListener('auth:expired', onAuthExpired);
 
-		if (!loggedIn) return;
+		if (!loggedIn) return () => { window.removeEventListener('auth:expired', onAuthExpired); };
 
 		currentTheme = loadTheme();
 		applyTheme(currentTheme);
@@ -114,6 +115,7 @@
 		mq.addEventListener('change', mqHandler);
 
 		return () => {
+			window.removeEventListener('auth:expired', onAuthExpired);
 			document.removeEventListener('wiki-navigate', handler);
 			mq.removeEventListener('change', mqHandler);
 		};
@@ -161,10 +163,15 @@
 		if (saveTimer) clearTimeout(saveTimer);
 		saveTimer = setTimeout(async () => {
 			saving = true;
-			const fullContent = serializeFrontmatter(fm) + body;
-			await saveNote(name, fullContent);
-			notes = await listNotes();
-			saving = false;
+			try {
+				const fullContent = serializeFrontmatter(fm) + body;
+				await saveNote(name, fullContent);
+				notes = await listNotes();
+			} catch {
+				// save failed — indicator resets, user can retry
+			} finally {
+				saving = false;
+			}
 		}, 800);
 	}
 
@@ -232,9 +239,9 @@
 	function toggleLock() {
 		const fm = { ...noteFrontmatter };
 		if (isLocked) {
-			delete (fm as any).locked;
+			delete fm.locked;
 		} else {
-			(fm as any).locked = true;
+			fm.locked = true;
 		}
 		onFrontmatterChange(fm);
 	}
@@ -363,7 +370,7 @@
 			{#if !isMobile}
 				<div class="titlebar">
 					{#if renaming}
-						<div style="display: flex; align-items: center; gap: 0.5rem;">
+						<div class="rename-row">
 							<input
 								bind:this={renameInput}
 								bind:value={renameValue}
@@ -542,13 +549,13 @@
 	}
 
 	.topbar-locked {
-		color: #e07b39;
+		color: var(--color-warning);
 	}
 
 	.topbar-title {
 		flex: 1;
 		font-size: 1.05rem;
-		font-weight: 650;
+		font-weight: 600;
 		letter-spacing: -0.02em;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -572,7 +579,7 @@
 		border: none;
 		padding: 0;
 		cursor: text;
-		font-weight: 650;
+		font-weight: 600;
 		font-size: 1.05rem;
 		letter-spacing: -0.02em;
 		color: var(--text);
@@ -680,10 +687,16 @@
 
 	.lock-btn.locked {
 		opacity: 1;
-		color: #e07b39;
+		color: var(--color-warning);
 	}
 
 	/* ── Rename ──────────────────────────────────────────────── */
+	.rename-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
 	.rename-input {
 		font-weight: 500;
 		font-size: 0.95rem;
@@ -700,7 +713,7 @@
 
 	.rename-error {
 		font-size: 0.75rem;
-		color: #e57373;
+		color: var(--color-danger);
 	}
 
 	.mobile-rename {

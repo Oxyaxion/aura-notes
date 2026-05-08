@@ -48,6 +48,7 @@ export interface Frontmatter {
     author?: string;
     rating?: number;
     pinned?: boolean;
+    locked?: boolean;
     area?: string;
     priority?: string;
     project?: string;
@@ -129,7 +130,7 @@ export async function uploadAsset(file: File): Promise<string> {
     const res = await apiFetch(`${BASE}/assets`, { method: 'POST', headers: authHeaders(), body: form });
     if (!res.ok) throw new Error('Failed to upload asset');
     const data = await res.json();
-    return `${BASE}${data.url}` as string;
+    return `${BASE}${data.url}`;
 }
 
 export interface TagCount {
@@ -254,7 +255,7 @@ export async function getDrawingPreview(name: string): Promise<string> {
 }
 
 export async function saveDrawingPreview(name: string, svg: string): Promise<void> {
-    await fetch(`${BASE}/api/drawing-preview/${encodeName(name)}`, {
+    await apiFetch(`${BASE}/api/drawing-preview/${encodeName(name)}`, {
         method: 'PUT',
         headers: { ...authHeaders(), 'Content-Type': 'image/svg+xml' },
         body: svg,

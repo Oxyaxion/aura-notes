@@ -16,6 +16,9 @@ h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
 	--accent:     #3a6ea3;
 	--muted:      #7e7970;
 
+	--color-warning: #e07b39;
+	--color-danger:  #e57373;
+
 	--ui-font: 'Inter', system-ui, sans-serif;
 	--ui-font-size: 1.1rem;
 	--ui-line-height: 1.7;
@@ -427,7 +430,7 @@ html, body {
     font-style: italic;
 }
 
-.query-error { color: #e57373; }
+.query-error { color: var(--color-danger); }
 
 .query-tag-cloud {
     display: flex;
@@ -602,7 +605,7 @@ html, body {
     line-height: 1;
 }
 
-.drawing-block-delete-btn:hover { color: #e57373; }
+.drawing-block-delete-btn:hover { color: var(--color-danger); }
 .drawing-block-edit-btn:hover { opacity: 0.85; }
 
 .drawing-block-preview {

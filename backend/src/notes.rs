@@ -73,10 +73,19 @@ pub async fn list_notes(
     Ok(Json(notes))
 }
 
+fn is_safe_note_name(name: &str) -> bool {
+    !name.is_empty()
+        && !name.contains('\\')
+        && !name.split('/').any(|seg| seg == "." || seg == "..")
+}
+
 pub async fn get_note(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<NoteContent>, StatusCode> {
+    if !is_safe_note_name(&name) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
     let path = state.storage_path.join("notes").join(format!("{name}.md"));
     let raw = tokio::fs::read_to_string(&path)
         .await
@@ -95,6 +104,9 @@ pub async fn put_note(
     Path(name): Path<String>,
     Json(body): Json<PutNoteBody>,
 ) -> Result<StatusCode, StatusCode> {
+    if !is_safe_note_name(&name) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
     let path = state.storage_path.join("notes").join(format!("{name}.md"));
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent)
@@ -139,13 +151,7 @@ pub async fn rename_note(
 ) -> Result<StatusCode, StatusCode> {
     let new_name = body.new_name.trim().to_string();
 
-    if new_name.is_empty()
-        || new_name == name
-        || new_name.contains('\\')
-        || new_name == "."
-        || new_name == ".."
-        || new_name.split('/').any(|seg| seg == "." || seg == "..")
-    {
+    if !is_safe_note_name(&new_name) || new_name == name {
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -198,6 +204,9 @@ pub async fn delete_note(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<StatusCode, StatusCode> {
+    if !is_safe_note_name(&name) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
     let path = state.storage_path.join("notes").join(format!("{name}.md"));
     if !path.exists() {
         return Err(StatusCode::NOT_FOUND);
@@ -241,9 +250,10 @@ pub async fn serve_asset(
     State(state): State<Arc<AppState>>,
     Path(filename): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let path = state.storage_path.join("assets").join(&filename);
+    let safe_name = sanitize_filename(&filename);
+    let path = state.storage_path.join("assets").join(&safe_name);
     let data = tokio::fs::read(&path).await.map_err(|_| StatusCode::NOT_FOUND)?;
-    let content_type = match filename.rsplit('.').next().unwrap_or("") {
+    let content_type = match safe_name.rsplit('.').next().unwrap_or("") {
         "png"  => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
         "gif"  => "image/gif",
@@ -288,7 +298,7 @@ pub async fn delete_asset(
     State(state): State<Arc<AppState>>,
     Path(filename): Path<String>,
 ) -> StatusCode {
-    let path = state.storage_path.join("assets").join(&filename);
+    let path = state.storage_path.join("assets").join(sanitize_filename(&filename));
     let _ = tokio::fs::remove_file(path).await;
     StatusCode::NO_CONTENT
 }

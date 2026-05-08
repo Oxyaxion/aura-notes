@@ -208,10 +208,13 @@ export const QueryBlock = Node.create({
 
             applyLocked(node.attrs.locked ?? false);
 
-            // Fallback: clicking on non-interactive parts of the block focuses the input.
-            dom.addEventListener('click', (e) => {
+            // Intercept mousedown so ProseMirror never steals focus from the input.
+            dom.addEventListener('mousedown', (e) => {
                 const target = e.target as HTMLElement;
-                if (target !== input && !target.closest('button')) {
+                if (target === input) {
+                    e.stopPropagation(); // let the browser focus the input naturally
+                } else if (!target.closest('button')) {
+                    e.preventDefault(); // prevent PM from creating a NodeSelection
                     input.focus();
                 }
             });
@@ -407,8 +410,9 @@ export const QueryBlock = Node.create({
                     case 'Escape':
                         editor.view.focus();
                         e.stopPropagation(); break;
-                    case 'Backspace':
-                        if (input.value === '' && !currentNode.attrs.locked && typeof pmPos === 'number') {
+                    case 'Backspace': {
+                        const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
+                        if ((input.value === '' || atStart) && !currentNode.attrs.locked && typeof pmPos === 'number') {
                             editor.chain()
                                 .deleteRange({ from: pmPos, to: pmPos + currentNode.nodeSize })
                                 .focus()
@@ -416,6 +420,7 @@ export const QueryBlock = Node.create({
                             e.preventDefault();
                         }
                         e.stopPropagation(); break;
+                    }
                     default:
                         e.stopPropagation(); break;
                 }

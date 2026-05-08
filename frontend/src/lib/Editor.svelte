@@ -802,8 +802,8 @@
 	}
 
 	.link-tooltip button:hover { background: var(--sidebar-bg); }
-	.link-tooltip button.lt-remove { color: #e57373; }
-	.link-tooltip button.lt-remove:hover { background: color-mix(in srgb, #e57373 10%, transparent); }
+	.link-tooltip button.lt-remove { color: var(--color-danger); }
+	.link-tooltip button.lt-remove:hover { background: color-mix(in srgb, var(--color-danger) 10%, transparent); }
 
 	/* Link prompt */
 	.link-backdrop {
@@ -865,10 +865,10 @@
 
 	.lp-remove {
 		background: none;
-		color: #e57373;
+		color: var(--color-danger);
 	}
 
-	.lp-remove:hover { background: color-mix(in srgb, #e57373 10%, transparent); }
+	.lp-remove:hover { background: color-mix(in srgb, var(--color-danger) 10%, transparent); }
 	:global(.tiptap-editor p.is-editor-empty:first-child::before) {
 		content: attr(data-placeholder);
 		float: left;
@@ -1133,8 +1133,8 @@
 	}
 
 	.table-toolbar button.danger:hover {
-		background: rgba(229, 115, 115, 0.15);
-		color: #e57373;
+		background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+		color: var(--color-danger);
 	}
 
 	.tb-sep {
