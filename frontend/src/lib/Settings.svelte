@@ -241,6 +241,7 @@
 		<div class="modal-footer">
 			<button class="signout-btn" onclick={onLogout}>Sign out</button>
 			<span class="footer-hint">Changes apply immediately</span>
+			<span class="version-hint">{__APP_VERSION__}</span>
 		</div>
 
 	</div>
@@ -534,6 +535,13 @@
 	.footer-hint {
 		font-size: 0.75rem;
 		color: var(--muted);
+	}
+
+	.version-hint {
+		font-size: 0.7rem;
+		color: var(--muted);
+		opacity: 0.5;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.reset-btn {
