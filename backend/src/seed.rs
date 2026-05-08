@@ -2,7 +2,6 @@ use std::path::Path;
 
 const HOME_MD:        &str = include_str!("defaults/Home.md");
 const HELP_MD:        &str = include_str!("defaults/Help.md");
-const DASHBOARD_MD:   &str = include_str!("defaults/Dashboard.md");
 const RISOTTO_MD:     &str = include_str!("defaults/Recipes/Mushroom Risotto.md");
 const CARBONARA_MD:   &str = include_str!("defaults/Recipes/Pasta Carbonara.md");
 const LINUX_MD:       &str = include_str!("defaults/Dev/Linux Commands.md");
@@ -16,7 +15,6 @@ const MAY_MD:         &str = include_str!("defaults/Journal/May 2026.md");
 pub async fn seed_defaults(notes_dir: &Path) {
     seed_file(notes_dir, "Home.md", HOME_MD).await;
     seed_file(notes_dir, "Help.md", HELP_MD).await;
-    seed_file(notes_dir, "Dashboard.md", DASHBOARD_MD).await;
     seed_file(notes_dir, "Recipes/Mushroom Risotto.md", RISOTTO_MD).await;
     seed_file(notes_dir, "Recipes/Pasta Carbonara.md", CARBONARA_MD).await;
     seed_file(notes_dir, "Dev/Linux Commands.md", LINUX_MD).await;
