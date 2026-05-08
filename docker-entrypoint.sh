@@ -19,5 +19,15 @@ if [ ! -f "$CONFIG" ]; then
     fi
 fi
 
+# Weekly demo reset — wipe notes if the marker is older than 7 days
+RESET_MARKER=/data/.last_reset
+if [ -f "$RESET_MARKER" ] && find "$RESET_MARKER" -mtime +6 | grep -q .; then
+    echo "Weekly reset: clearing demo notes…"
+    rm -rf /data/notes /data/assets /data/drawings
+    touch "$RESET_MARKER"
+elif [ ! -f "$RESET_MARKER" ]; then
+    touch "$RESET_MARKER"
+fi
+
 export AURA_NOTES_CONFIG="$CONFIG"
 exec /app/clef-note --storage /data --port "${PORT:-8080}"
