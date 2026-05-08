@@ -19,4 +19,5 @@ if [ ! -f "$CONFIG" ]; then
     fi
 fi
 
+export AURA_NOTES_CONFIG="$CONFIG"
 exec /app/clef-note --storage /data --port "${PORT:-8080}"
