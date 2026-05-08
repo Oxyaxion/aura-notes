@@ -241,7 +241,7 @@
 		<div class="modal-footer">
 			<button class="signout-btn" onclick={onLogout}>Sign out</button>
 			<span class="footer-hint">Changes apply immediately</span>
-			<span class="version-hint">{__APP_VERSION__}</span>
+			<a class="version-hint" href="https://github.com/Oxyaxion/clef-note/releases" target="_blank" rel="noopener noreferrer">{__APP_VERSION__}</a>
 		</div>
 
 	</div>
@@ -542,6 +542,12 @@
 		color: var(--muted);
 		opacity: 0.5;
 		font-variant-numeric: tabular-nums;
+		text-decoration: none;
+	}
+
+	.version-hint:hover {
+		opacity: 0.9;
+		text-decoration: underline;
 	}
 
 	.reset-btn {
