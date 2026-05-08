@@ -17,6 +17,10 @@
 - API to queries from the CLI (`scripts/an`).
 - Keyboard-first: `/` for blocks, `Ctrl+K` for commands.
 
+## Try the demo
+
+**[clef-note.fly.dev](https://clef-note.fly.dev)** · password: `clef-note`
+
 ## Road map
 
 - OpenID Authentication
