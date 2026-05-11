@@ -23,6 +23,7 @@
 	} from '$lib/api';
 	import { loadTheme, applyTheme, type ThemeId } from '$lib/theme';
 	import { applySettings, DEFAULT, type AppSettings } from '$lib/settings';
+	import { setDateFormat } from '$lib/slashCommands';
 	import { getSettings } from '$lib/api';
 
 	let notes = $state<NoteMeta[]>([]);
@@ -98,6 +99,7 @@
 			const s: AppSettings = { ...DEFAULT, ...(raw as Partial<AppSettings>) };
 			currentSettings = s;
 			applySettings(s);
+			setDateFormat(s.dateFormat ?? 'long-en');
 			vaultName = s.vaultName ?? 'Notes';
 			const home = s.homePage?.trim();
 			if (home) selectNote(home).catch(() => {});
@@ -290,7 +292,7 @@
 		onClose={() => (settingsOpen = false)}
 		onSetTheme={(id) => { currentTheme = id; applyTheme(id); }}
 		onLogout={async () => { await logout(); loggedIn = false; }}
-		onSettingsChange={(s: AppSettings) => { vaultName = s.vaultName ?? 'Notes'; currentSettings = s; }}
+		onSettingsChange={(s: AppSettings) => { vaultName = s.vaultName ?? 'Notes'; currentSettings = s; setDateFormat(s.dateFormat ?? 'long-en'); }}
 	/>
 {/if}
 

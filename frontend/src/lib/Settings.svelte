@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { THEMES, type ThemeId } from './theme';
-	import { applySettings, DEFAULT, FONT_PRESETS, type AppSettings } from './settings';
+	import { applySettings, DEFAULT, FONT_PRESETS, DATE_FORMATS, type AppSettings } from './settings';
 	import { fetchKeys, putSettings } from './api';
 
 	interface Props {
@@ -105,6 +105,18 @@
 							placeholder="note name"
 							autocomplete="off"
 						/>
+					</div>
+					<div class="setting-row">
+						<span class="setting-label">Date format</span>
+						<select
+							class="select-input"
+							bind:value={settings.dateFormat}
+							onchange={onChange}
+						>
+							{#each DATE_FORMATS as f}
+								<option value={f.id}>{f.label} — {f.example}</option>
+							{/each}
+						</select>
 					</div>
 					<p class="section-desc">
 						Shortcuts: <kbd>Ctrl+Shift+H</kbd> home · <kbd>Ctrl+Shift+P</kbd> back · <kbd>Ctrl+Shift+N</kbd> forward
@@ -662,6 +674,23 @@
 	}
 
 	.text-input:focus {
+		border-color: var(--accent);
+	}
+
+	.select-input {
+		background: var(--sidebar-bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 0.3rem 0.6rem;
+		font-size: 0.85rem;
+		font-family: inherit;
+		color: var(--text);
+		outline: none;
+		cursor: pointer;
+		transition: border-color 80ms;
+	}
+
+	.select-input:focus {
 		border-color: var(--accent);
 	}
 

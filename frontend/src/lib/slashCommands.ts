@@ -16,6 +16,29 @@ const SlashInputTrackerKey = new PluginKey('slashInputTracker');
 // moved to an existing '/' via mouse click or arrow keys.
 let docJustChanged = false;
 
+let _dateFormat = 'long-en';
+export function setDateFormat(fmt: string) { _dateFormat = fmt; }
+
+function formatDate(): string {
+	const d = new Date();
+	switch (_dateFormat) {
+		case 'eu':  return d.toLocaleDateString('fr-FR');
+		case 'iso': return d.toISOString().slice(0, 10);
+		case 'us':  return d.toLocaleDateString('en-US');
+		default:    return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+	}
+}
+
+function formatTimestamp(): string {
+	const d = new Date();
+	switch (_dateFormat) {
+		case 'eu':  return `${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+		case 'iso': return d.toISOString().slice(0, 16).replace('T', ' ');
+		case 'us':  return d.toLocaleString('en-US');
+		default:    return d.toLocaleString('en-US');
+	}
+}
+
 export interface CommandItem {
 	title: string;
 	description: string;
@@ -229,25 +252,16 @@ export const ALL_ITEMS: CommandItem[] = [
 		description: "Insert today's date",
 		icon: '📅',
 		keywords: ['date', 'today'],
-		command: ({ editor, range }) => {
-			const now = new Date().toLocaleDateString('en-US', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-			});
-			editor.chain().focus().deleteRange(range).insertContent(now).run();
-		},
+		command: ({ editor, range }) =>
+			editor.chain().focus().deleteRange(range).insertContent(formatDate()).run(),
 	},
 	{
 		title: 'Timestamp',
 		description: 'Current date and time',
 		icon: '🕐',
 		keywords: ['time', 'timestamp', 'datetime'],
-		command: ({ editor, range }) => {
-			const now = new Date().toLocaleString('en-US');
-			editor.chain().focus().deleteRange(range).insertContent(now).run();
-		},
+		command: ({ editor, range }) =>
+			editor.chain().focus().deleteRange(range).insertContent(formatTimestamp()).run(),
 	},
 ];
 

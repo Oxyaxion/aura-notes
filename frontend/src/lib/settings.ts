@@ -5,6 +5,7 @@ export interface AppSettings {
     customCss: string;
     vaultName: string;
     homePage: string;
+    dateFormat: string;
 }
 
 export const FONT_PRESETS = [
@@ -14,6 +15,13 @@ export const FONT_PRESETS = [
     { id: 'mono',   label: 'Mono',     value: "'JetBrains Mono', 'Fira Code', ui-monospace, monospace" },
 ];
 
+export const DATE_FORMATS = [
+    { id: 'long-en', label: 'Full',     example: 'Wednesday, December 25, 2025' },
+    { id: 'eu',      label: 'European', example: '25/12/2025' },
+    { id: 'iso',     label: 'ISO',      example: '2025-12-25' },
+    { id: 'us',      label: 'American', example: '12/25/2025' },
+];
+
 export const DEFAULT: AppSettings = {
     fontFamily: "'Inter', system-ui, sans-serif",
     fontSize: 1.1,
@@ -21,6 +29,7 @@ export const DEFAULT: AppSettings = {
     customCss: '',
     vaultName: 'Notes',
     homePage: '',
+    dateFormat: 'long-en',
 };
 
 export function applySettings(s: AppSettings): void {
