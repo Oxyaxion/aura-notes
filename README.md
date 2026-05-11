@@ -35,7 +35,7 @@
 | Layer    | Technology                         |
 |----------|------------------------------------|
 | Backend  | Rust + Axum                        |
-| Frontend | SvelteKit + Tailwind CSS           |
+| Frontend | SvelteKit (vanilla CSS)            |
 | Editor   | TipTap (ProseMirror)               |
 | Storage  | Flat `.md` files (in-memory index) |
 
