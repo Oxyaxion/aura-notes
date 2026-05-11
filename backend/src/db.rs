@@ -246,10 +246,7 @@ impl Db {
 
         // order by overrides the final sort (after potential recent/oldest truncation)
         if let Some(ref ob) = order_by {
-            results.sort_by(|a, b| {
-                let cmp = compare_by_field(a, b, &ob.field);
-                if ob.desc { cmp.reverse() } else { cmp }
-            });
+            results.sort_by(|a, b| compare_by_field(a, b, &ob.field, ob.desc));
         } else if recent.is_none() && oldest.is_none() {
             results.sort_by(|a, b| a.name.cmp(&b.name));
         }
@@ -401,55 +398,77 @@ struct OrderBy {
     desc: bool,
 }
 
-fn compare_by_field(a: &NoteRow, b: &NoteRow, field: &str) -> std::cmp::Ordering {
+fn compare_by_field(a: &NoteRow, b: &NoteRow, field: &str, desc: bool) -> std::cmp::Ordering {
     match field {
-        "name"                  => a.name.cmp(&b.name),
-        "title"                 => {
+        "name" => {
+            let cmp = a.name.cmp(&b.name);
+            if desc { cmp.reverse() } else { cmp }
+        }
+        "title" => {
             let ta = a.title.as_deref().unwrap_or(&a.name);
             let tb = b.title.as_deref().unwrap_or(&b.name);
-            ta.cmp(tb)
+            let cmp = ta.cmp(tb);
+            if desc { cmp.reverse() } else { cmp }
         }
-        "date"                  => cmp_opt_str(a.date.as_deref(), b.date.as_deref()),
-        "modified" | "modified_at" => a.modified_at.cmp(&b.modified_at),
-        "due"                   => cmp_opt_str(a.due.as_deref(), b.due.as_deref()),
-        "status"                => cmp_opt_str(a.status.as_deref(), b.status.as_deref()),
-        "rating"                => cmp_opt_i64(a.rating, b.rating),
-        "area"                  => cmp_opt_str(a.area.as_deref(), b.area.as_deref()),
-        "author"                => cmp_opt_str(a.author.as_deref(), b.author.as_deref()),
-        "priority"              => cmp_priority(a.priority.as_deref(), b.priority.as_deref()),
-        "project"               => cmp_opt_str(a.project.as_deref(), b.project.as_deref()),
-        "lastModified"          => cmp_opt_str(a.last_modified.as_deref(), b.last_modified.as_deref()),
-        _                       => std::cmp::Ordering::Equal,
+        "date"             => cmp_opt_str(a.date.as_deref(), b.date.as_deref(), desc),
+        "modified" | "modified_at" => {
+            let cmp = a.modified_at.cmp(&b.modified_at);
+            if desc { cmp.reverse() } else { cmp }
+        }
+        "due"              => cmp_opt_str(a.due.as_deref(), b.due.as_deref(), desc),
+        "status"           => cmp_opt_str(a.status.as_deref(), b.status.as_deref(), desc),
+        "rating"           => cmp_opt_i64(a.rating, b.rating, desc),
+        "area"             => cmp_opt_str(a.area.as_deref(), b.area.as_deref(), desc),
+        "author"           => cmp_opt_str(a.author.as_deref(), b.author.as_deref(), desc),
+        "priority"         => cmp_priority(a.priority.as_deref(), b.priority.as_deref(), desc),
+        "project"          => cmp_opt_str(a.project.as_deref(), b.project.as_deref(), desc),
+        "lastModified"     => cmp_opt_str(a.last_modified.as_deref(), b.last_modified.as_deref(), desc),
+        _                  => std::cmp::Ordering::Equal,
     }
 }
 
-fn cmp_priority(a: Option<&str>, b: Option<&str>) -> std::cmp::Ordering {
-    fn rank(p: Option<&str>) -> u8 {
+// None always sorts last, regardless of direction.
+fn cmp_opt_str(a: Option<&str>, b: Option<&str>, desc: bool) -> std::cmp::Ordering {
+    match (a, b) {
+        (Some(a), Some(b)) => {
+            let cmp = a.cmp(b);
+            if desc { cmp.reverse() } else { cmp }
+        }
+        (Some(_), None)    => std::cmp::Ordering::Less,
+        (None, Some(_))    => std::cmp::Ordering::Greater,
+        (None, None)       => std::cmp::Ordering::Equal,
+    }
+}
+
+fn cmp_opt_i64(a: Option<i64>, b: Option<i64>, desc: bool) -> std::cmp::Ordering {
+    match (a, b) {
+        (Some(a), Some(b)) => {
+            let cmp = a.cmp(&b);
+            if desc { cmp.reverse() } else { cmp }
+        }
+        (Some(_), None)    => std::cmp::Ordering::Less,
+        (None, Some(_))    => std::cmp::Ordering::Greater,
+        (None, None)       => std::cmp::Ordering::Equal,
+    }
+}
+
+fn cmp_priority(a: Option<&str>, b: Option<&str>, desc: bool) -> std::cmp::Ordering {
+    fn rank(p: Option<&str>) -> Option<u8> {
         match p {
-            Some("high")   => 0,
-            Some("medium") => 1,
-            Some("low")    => 2,
-            _              => 3,
+            Some("high")   => Some(0),
+            Some("medium") => Some(1),
+            Some("low")    => Some(2),
+            _              => None,
         }
     }
-    rank(a).cmp(&rank(b))
-}
-
-fn cmp_opt_str(a: Option<&str>, b: Option<&str>) -> std::cmp::Ordering {
-    match (a, b) {
-        (Some(a), Some(b)) => a.cmp(b),
-        (Some(_), None)    => std::cmp::Ordering::Less,
-        (None, Some(_))    => std::cmp::Ordering::Greater,
-        (None, None)       => std::cmp::Ordering::Equal,
-    }
-}
-
-fn cmp_opt_i64(a: Option<i64>, b: Option<i64>) -> std::cmp::Ordering {
-    match (a, b) {
-        (Some(a), Some(b)) => a.cmp(&b),
-        (Some(_), None)    => std::cmp::Ordering::Less,
-        (None, Some(_))    => std::cmp::Ordering::Greater,
-        (None, None)       => std::cmp::Ordering::Equal,
+    match (rank(a), rank(b)) {
+        (Some(ra), Some(rb)) => {
+            let cmp = ra.cmp(&rb);
+            if desc { cmp.reverse() } else { cmp }
+        }
+        (Some(_), None)  => std::cmp::Ordering::Less,
+        (None, Some(_))  => std::cmp::Ordering::Greater,
+        (None, None)     => std::cmp::Ordering::Equal,
     }
 }
 
@@ -580,4 +599,806 @@ fn parse_query(q: &str) -> (Vec<Vec<Pred>>, Vec<Pred>, Option<usize>, Option<usi
     // Drop empty groups (e.g. from a leading OR)
     let or_groups = or_groups.into_iter().filter(|g| !g.is_empty()).collect();
     (or_groups, global_not, recent, oldest, order_by)
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// Default NoteRow — every field is empty/false/None/0.
+    fn r(name: &str) -> NoteRow {
+        NoteRow {
+            name: name.to_string(),
+            title: None,
+            date: None,
+            status: None,
+            tags: vec![],
+            modified_at: 0,
+            aliases: vec![],
+            note_type: None,
+            due: None,
+            url: None,
+            author: None,
+            rating: None,
+            pinned: false,
+            locked: false,
+            area: None,
+            priority: None,
+            project: None,
+            last_modified: None,
+        }
+    }
+
+    /// Insert a pre-built row directly into the DB (bypasses ParsedNote).
+    fn insert(db: &Db, row: NoteRow) {
+        db.0.write().unwrap().insert(
+            row.name.clone(),
+            StoredNote { row, body: String::new() },
+        );
+    }
+
+    /// Run a query and return note names in the order produced by the engine.
+    fn names(db: &Db, q: &str) -> Vec<String> {
+        db.query_notes(q).into_iter().map(|r| r.name).collect()
+    }
+
+    /// Like names(), but sort the result for order-independent assertions.
+    fn sorted_names(db: &Db, q: &str) -> Vec<String> {
+        let mut v = names(db, q);
+        v.sort();
+        v
+    }
+
+    // ── Tag ───────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn tag_hash_basic() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], ..r("b") });
+        insert(&db, NoteRow { tags: vec!["work".into(), "urgent".into()], ..r("c") });
+
+        assert_eq!(sorted_names(&db, "#work"), vec!["a", "c"]);
+    }
+
+    #[test]
+    fn tag_key_value_syntax() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], ..r("b") });
+
+        assert_eq!(sorted_names(&db, "tag:work"), vec!["a"]);
+    }
+
+    #[test]
+    fn tag_prefix_match() {
+        // starts_with: "#work" matches tags "work" and "work/meeting"
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work/meeting".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], ..r("b") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], ..r("c") });
+
+        assert_eq!(sorted_names(&db, "#work"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn tag_case_insensitive() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["Work".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["WORK".into()], ..r("b") });
+        insert(&db, NoteRow { tags: vec!["other".into()], ..r("c") });
+
+        assert_eq!(sorted_names(&db, "#work"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn tag_no_match_returns_empty() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["personal".into()], ..r("a") });
+
+        assert!(sorted_names(&db, "#work").is_empty());
+    }
+
+    // ── Status ────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn status_exact_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { status: Some("active".into()), ..r("a") });
+        insert(&db, NoteRow { status: Some("done".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        assert_eq!(sorted_names(&db, "status:active"), vec!["a"]);
+    }
+
+    #[test]
+    fn status_no_partial_match() {
+        // status: is exact, not substring
+        let db = Db::new();
+        insert(&db, NoteRow { status: Some("active".into()), ..r("a") });
+        insert(&db, NoteRow { status: Some("inactive".into()), ..r("b") });
+
+        assert_eq!(sorted_names(&db, "status:active"), vec!["a"]);
+    }
+
+    // ── Date ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn date_month_prefix() {
+        let db = Db::new();
+        insert(&db, NoteRow { date: Some("2025-01-15".into()), ..r("a") });
+        insert(&db, NoteRow { date: Some("2025-02-20".into()), ..r("b") });
+        insert(&db, NoteRow { date: Some("2024-12-01".into()), ..r("c") });
+        insert(&db, NoteRow { ..r("d") });
+
+        assert_eq!(sorted_names(&db, "date:2025-01"), vec!["a"]);
+    }
+
+    #[test]
+    fn date_year_prefix_matches_all_months() {
+        let db = Db::new();
+        insert(&db, NoteRow { date: Some("2025-01-15".into()), ..r("a") });
+        insert(&db, NoteRow { date: Some("2025-09-01".into()), ..r("b") });
+        insert(&db, NoteRow { date: Some("2024-12-01".into()), ..r("c") });
+
+        assert_eq!(sorted_names(&db, "date:2025"), vec!["a", "b"]);
+    }
+
+    // ── Text / Title / Path / Name ────────────────────────────────────────────
+
+    #[test]
+    fn bare_word_matches_note_name() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Meeting Notes") });
+        insert(&db, NoteRow { ..r("Daily Journal") });
+        insert(&db, NoteRow { ..r("Ideas") });
+
+        assert_eq!(sorted_names(&db, "meeting"), vec!["Meeting Notes"]);
+    }
+
+    #[test]
+    fn bare_word_matches_title_field() {
+        let db = Db::new();
+        insert(&db, NoteRow { title: Some("Project Overview".into()), ..r("a") });
+        insert(&db, NoteRow { title: Some("Daily Journal".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        assert_eq!(sorted_names(&db, "project"), vec!["a"]);
+    }
+
+    #[test]
+    fn bare_word_searches_full_path() {
+        let db = Db::new();
+        // "work" is in the folder name, not the file name
+        insert(&db, NoteRow { ..r("Work/Note") });
+        insert(&db, NoteRow { ..r("Personal/Note") });
+
+        assert_eq!(sorted_names(&db, "work"), vec!["Work/Note"]);
+    }
+
+    #[test]
+    fn title_filter_uses_basename_fallback() {
+        let db = Db::new();
+        // No title → falls back to basename for title: matching
+        insert(&db, NoteRow { ..r("Work/Notes") });        // folder=Work, basename=Notes
+        insert(&db, NoteRow { ..r("Work/Meeting") });      // basename=Meeting
+        insert(&db, NoteRow { title: Some("Work Plan".into()), ..r("x") });
+
+        // title:work → basename "Notes" ≠ work, "Meeting" ≠ work, title "Work Plan" contains work
+        assert_eq!(sorted_names(&db, "title:work"), vec!["x"]);
+        // title:notes → basename "Notes" contains "notes"
+        assert_eq!(sorted_names(&db, "title:notes"), vec!["Work/Notes"]);
+    }
+
+    #[test]
+    fn title_vs_path_difference() {
+        let db = Db::new();
+        // Full path has "work", but basename is "Note"
+        insert(&db, NoteRow { ..r("Work/Note") });
+
+        // path:work → full path "work/note" contains "work" → matches
+        assert_eq!(sorted_names(&db, "path:work"), vec!["Work/Note"]);
+        // title:work → basename "note" does not contain "work" → no match
+        assert!(sorted_names(&db, "title:work").is_empty());
+    }
+
+    #[test]
+    fn path_filter_full_path_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Work/Meeting Notes") });
+        insert(&db, NoteRow { ..r("Personal/Journal") });
+        insert(&db, NoteRow { ..r("Work/Planning") });
+
+        assert_eq!(sorted_names(&db, "path:work"), vec!["Work/Meeting Notes", "Work/Planning"]);
+    }
+
+    #[test]
+    fn name_filter_last_segment_only() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Work/Meeting") });     // basename = Meeting
+        insert(&db, NoteRow { ..r("Meeting/Topic") });    // basename = Topic (folder is Meeting)
+        insert(&db, NoteRow { ..r("Other") });
+
+        // name: matches last segment → only "Work/Meeting" has basename "meeting"
+        assert_eq!(sorted_names(&db, "name:meeting"), vec!["Work/Meeting"]);
+    }
+
+    #[test]
+    fn path_vs_name_distinction() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Work/Meeting") });
+        insert(&db, NoteRow { ..r("Meeting/Topic") });
+
+        // path:meeting → full paths "work/meeting" and "meeting/topic" both contain "meeting"
+        assert_eq!(sorted_names(&db, "path:meeting"), vec!["Meeting/Topic", "Work/Meeting"]);
+        // name:meeting → basenames: "meeting" matches, "topic" does not
+        assert_eq!(sorted_names(&db, "name:meeting"), vec!["Work/Meeting"]);
+    }
+
+    // ── Type ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn type_exact_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { note_type: Some("template".into()), ..r("t") });
+        insert(&db, NoteRow { note_type: Some("journal".into()), ..r("j") });
+        insert(&db, NoteRow { ..r("normal") });
+
+        assert_eq!(sorted_names(&db, "type:template"), vec!["t"]);
+    }
+
+    // ── Due ───────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn due_prefix_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { due: Some("2025-06-01".into()), ..r("a") });
+        insert(&db, NoteRow { due: Some("2025-07-15".into()), ..r("b") });
+        insert(&db, NoteRow { due: Some("2026-01-01".into()), ..r("c") });
+        insert(&db, NoteRow { ..r("d") });
+
+        assert_eq!(sorted_names(&db, "due:2025-06"), vec!["a"]);
+        assert_eq!(sorted_names(&db, "due:2025"), vec!["a", "b"]);
+    }
+
+    // ── Area / Author / Rating ────────────────────────────────────────────────
+
+    #[test]
+    fn area_substring_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { area: Some("pro".into()), ..r("a") });
+        insert(&db, NoteRow { area: Some("perso".into()), ..r("b") });
+        insert(&db, NoteRow { area: Some("professional".into()), ..r("c") }); // "pro" is a substring
+        insert(&db, NoteRow { ..r("d") });
+
+        assert_eq!(sorted_names(&db, "area:pro"), vec!["a", "c"]);
+    }
+
+    #[test]
+    fn author_substring_case_insensitive() {
+        let db = Db::new();
+        insert(&db, NoteRow { author: Some("Martin".into()), ..r("a") });
+        insert(&db, NoteRow { author: Some("Hunt".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        assert_eq!(sorted_names(&db, "author:martin"), vec!["a"]);
+        assert_eq!(sorted_names(&db, "author:MARTIN"), vec!["a"]);
+    }
+
+    #[test]
+    fn rating_exact_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { rating: Some(5), ..r("a") });
+        insert(&db, NoteRow { rating: Some(3), ..r("b") });
+        insert(&db, NoteRow { rating: Some(5), ..r("c") });
+        insert(&db, NoteRow { ..r("d") });
+
+        assert_eq!(sorted_names(&db, "rating:5"), vec!["a", "c"]);
+    }
+
+    // ── Alias ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn alias_exact_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { aliases: vec!["myalias".into(), "short".into()], ..r("a") });
+        insert(&db, NoteRow { aliases: vec!["otheralias".into()], ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        assert_eq!(sorted_names(&db, "alias:myalias"), vec!["a"]);
+        assert_eq!(sorted_names(&db, "alias:short"),   vec!["a"]);
+    }
+
+    #[test]
+    fn alias_case_insensitive() {
+        let db = Db::new();
+        insert(&db, NoteRow { aliases: vec!["MyAlias".into()], ..r("a") });
+
+        assert_eq!(sorted_names(&db, "alias:myalias"), vec!["a"]);
+        assert_eq!(sorted_names(&db, "alias:MYALIAS"), vec!["a"]);
+    }
+
+    // ── URL ───────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn url_substring_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { url: Some("https://example.com/resource".into()), ..r("a") });
+        insert(&db, NoteRow { url: Some("https://other.org".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        assert_eq!(sorted_names(&db, "url:example.com"), vec!["a"]);
+    }
+
+    // ── Pinned / Locked ───────────────────────────────────────────────────────
+
+    #[test]
+    fn pinned_true_filter() {
+        let db = Db::new();
+        insert(&db, NoteRow { pinned: true, ..r("a") });
+        insert(&db, NoteRow { pinned: false, ..r("b") });
+        insert(&db, NoteRow { ..r("c") });  // default pinned=false
+
+        assert_eq!(sorted_names(&db, "pinned:true"),  vec!["a"]);
+        assert_eq!(sorted_names(&db, "pinned:false"), vec!["b", "c"]);
+    }
+
+    #[test]
+    fn locked_true_filter() {
+        let db = Db::new();
+        insert(&db, NoteRow { locked: true, ..r("a") });
+        insert(&db, NoteRow { ..r("b") });
+
+        assert_eq!(sorted_names(&db, "locked:true"),  vec!["a"]);
+        assert_eq!(sorted_names(&db, "locked:false"), vec!["b"]);
+    }
+
+    // ── Priority ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn priority_exact_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { priority: Some("high".into()),   ..r("a") });
+        insert(&db, NoteRow { priority: Some("medium".into()), ..r("b") });
+        insert(&db, NoteRow { priority: Some("low".into()),    ..r("c") });
+        insert(&db, NoteRow { ..r("d") });
+
+        assert_eq!(sorted_names(&db, "priority:high"),   vec!["a"]);
+        assert_eq!(sorted_names(&db, "priority:medium"), vec!["b"]);
+        assert_eq!(sorted_names(&db, "priority:low"),    vec!["c"]);
+    }
+
+    // ── Project ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn project_substring_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { project: Some("alpha".into()),    ..r("a") });
+        insert(&db, NoteRow { project: Some("beta".into()),     ..r("b") });
+        insert(&db, NoteRow { project: Some("alpha-v2".into()), ..r("c") });
+        insert(&db, NoteRow { ..r("d") });
+
+        assert_eq!(sorted_names(&db, "project:alpha"), vec!["a", "c"]);
+    }
+
+    // ── lastModified ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn last_modified_prefix_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { last_modified: Some("2025-05-01".into()), ..r("a") });
+        insert(&db, NoteRow { last_modified: Some("2025-06-15".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        // key is case-insensitive in the parser: "lastModified" → "lastmodified"
+        assert_eq!(sorted_names(&db, "lastModified:2025-05"), vec!["a"]);
+        assert_eq!(sorted_names(&db, "lastmodified:2025-05"), vec!["a"]);
+    }
+
+    // ── Depth ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn depth_zero_root_notes() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Home") });
+        insert(&db, NoteRow { ..r("Sub/Note") });
+        insert(&db, NoteRow { ..r("Deep/Sub/Note") });
+
+        assert_eq!(sorted_names(&db, "depth:0"), vec!["Home"]);
+    }
+
+    #[test]
+    fn depth_one_single_subfolder() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Home") });
+        insert(&db, NoteRow { ..r("Sub/Note A") });
+        insert(&db, NoteRow { ..r("Sub/Note B") });
+        insert(&db, NoteRow { ..r("Deep/Sub/Note") });
+
+        assert_eq!(sorted_names(&db, "depth:1"), vec!["Sub/Note A", "Sub/Note B"]);
+    }
+
+    #[test]
+    fn depth_two_nested_notes() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Home") });
+        insert(&db, NoteRow { ..r("Sub/Note") });
+        insert(&db, NoteRow { ..r("Deep/Sub/Note") });
+
+        assert_eq!(sorted_names(&db, "depth:2"), vec!["Deep/Sub/Note"]);
+    }
+
+    // ── Logic: AND (implicit), OR, NOT ───────────────────────────────────────
+
+    #[test]
+    fn implicit_and_all_predicates_must_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("active".into()), ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("done".into()),   ..r("b") });
+        insert(&db, NoteRow { tags: vec!["other".into()], status: Some("active".into()), ..r("c") });
+
+        assert_eq!(sorted_names(&db, "#work status:active"), vec!["a"]);
+    }
+
+    #[test]
+    fn explicit_and_keyword_is_noop() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("active".into()), ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("done".into()),   ..r("b") });
+
+        assert_eq!(sorted_names(&db, "#work AND status:active"), vec!["a"]);
+    }
+
+    #[test]
+    fn multiple_tag_filters_all_must_match() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into(), "urgent".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], ..r("b") });
+        insert(&db, NoteRow { tags: vec!["urgent".into()], ..r("c") });
+
+        assert_eq!(sorted_names(&db, "#work #urgent"), vec!["a"]);
+    }
+
+    #[test]
+    fn or_operator() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], ..r("b") });
+        insert(&db, NoteRow { tags: vec!["other".into()], ..r("c") });
+
+        assert_eq!(sorted_names(&db, "#work OR #personal"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn three_way_or() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["a".into()], ..r("nota") });
+        insert(&db, NoteRow { tags: vec!["b".into()], ..r("notb") });
+        insert(&db, NoteRow { tags: vec!["c".into()], ..r("notc") });
+        insert(&db, NoteRow { tags: vec!["d".into()], ..r("notd") });
+
+        assert_eq!(sorted_names(&db, "#a OR #b OR #c"), vec!["nota", "notb", "notc"]);
+    }
+
+    #[test]
+    fn or_and_precedence() {
+        // `A OR B C` → A OR (B AND C)
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()],    status: Some("done".into()),   ..r("a") }); // A only
+        insert(&db, NoteRow { tags: vec!["journal".into()], status: Some("active".into()), ..r("b") }); // B AND C
+        insert(&db, NoteRow { tags: vec!["journal".into()], status: Some("done".into()),   ..r("c") }); // B not C
+        insert(&db, NoteRow { tags: vec!["other".into()],   status: Some("active".into()), ..r("d") }); // neither
+
+        assert_eq!(sorted_names(&db, "#work OR #journal status:active"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn not_creates_global_exclusion() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("active".into()), ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("done".into()),   ..r("b") });
+        insert(&db, NoteRow { tags: vec!["other".into()], ..r("c") });
+
+        // NOT status:done → b and c are "not done", but we also filter #work → only a
+        assert_eq!(sorted_names(&db, "#work NOT status:done"), vec!["a"]);
+    }
+
+    #[test]
+    fn not_applies_globally_across_or_groups() {
+        // `A OR B NOT C` → (A OR B) AND NOT C
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()],     status: Some("done".into()),   ..r("a") }); // OR group A, but globally excluded
+        insert(&db, NoteRow { tags: vec!["personal".into()], status: Some("active".into()), ..r("b") }); // OR group B, not excluded
+        insert(&db, NoteRow { tags: vec!["work".into()],     status: Some("active".into()), ..r("c") }); // OR group A, not excluded
+
+        assert_eq!(sorted_names(&db, "#work OR #personal NOT status:done"), vec!["b", "c"]);
+    }
+
+    #[test]
+    fn not_tag_excludes_matching_notes() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], ..r("a") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], ..r("b") });
+        insert(&db, NoteRow { ..r("c") });
+
+        assert_eq!(sorted_names(&db, "NOT #work"), vec!["b", "c"]);
+    }
+
+    // ── Empty query ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn empty_query_returns_all_sorted_by_name() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("c") });
+        insert(&db, NoteRow { ..r("a") });
+        insert(&db, NoteRow { ..r("b") });
+
+        assert_eq!(names(&db, ""), vec!["a", "b", "c"]);
+    }
+
+    // ── recent / oldest ───────────────────────────────────────────────────────
+
+    #[test]
+    fn recent_returns_n_most_recently_modified() {
+        let db = Db::new();
+        insert(&db, NoteRow { modified_at: 1, ..r("old") });
+        insert(&db, NoteRow { modified_at: 3, ..r("new") });
+        insert(&db, NoteRow { modified_at: 2, ..r("mid") });
+
+        // Returned in descending modified_at order
+        assert_eq!(names(&db, "recent:2"), vec!["new", "mid"]);
+    }
+
+    #[test]
+    fn oldest_returns_n_least_recently_modified() {
+        let db = Db::new();
+        insert(&db, NoteRow { modified_at: 1, ..r("old") });
+        insert(&db, NoteRow { modified_at: 3, ..r("new") });
+        insert(&db, NoteRow { modified_at: 2, ..r("mid") });
+
+        // Returned in ascending modified_at order
+        assert_eq!(names(&db, "oldest:2"), vec!["old", "mid"]);
+    }
+
+    #[test]
+    fn recent_larger_than_count_returns_all() {
+        let db = Db::new();
+        insert(&db, NoteRow { modified_at: 1, ..r("a") });
+        insert(&db, NoteRow { modified_at: 2, ..r("b") });
+
+        assert_eq!(names(&db, "recent:100").len(), 2);
+    }
+
+    #[test]
+    fn recent_with_tag_filter() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], modified_at: 3, ..r("b") });
+        insert(&db, NoteRow { tags: vec!["work".into()], modified_at: 1, ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], modified_at: 2, ..r("mid") });
+        insert(&db, NoteRow { tags: vec!["other".into()], modified_at: 99, ..r("x") });
+
+        // Most-recent 2 among work notes: b(3) and mid(2)
+        assert_eq!(names(&db, "#work recent:2"), vec!["b", "mid"]);
+    }
+
+    // ── order by ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn order_by_name_asc() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("charlie") });
+        insert(&db, NoteRow { ..r("alpha") });
+        insert(&db, NoteRow { ..r("beta") });
+
+        assert_eq!(names(&db, "order by name"), vec!["alpha", "beta", "charlie"]);
+    }
+
+    #[test]
+    fn order_by_name_desc() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("charlie") });
+        insert(&db, NoteRow { ..r("alpha") });
+        insert(&db, NoteRow { ..r("beta") });
+
+        assert_eq!(names(&db, "order by name desc"), vec!["charlie", "beta", "alpha"]);
+    }
+
+    #[test]
+    fn order_by_date_asc_none_last() {
+        let db = Db::new();
+        insert(&db, NoteRow { date: Some("2025-03-01".into()), ..r("c") });
+        insert(&db, NoteRow { date: Some("2025-01-15".into()), ..r("a") });
+        insert(&db, NoteRow { date: Some("2025-02-10".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("no_date") }); // None → sorted last
+
+        assert_eq!(names(&db, "order by date"), vec!["a", "b", "c", "no_date"]);
+    }
+
+    #[test]
+    fn order_by_date_desc_none_last() {
+        // None always sorts last, even in descending order
+        let db = Db::new();
+        insert(&db, NoteRow { date: Some("2025-03-01".into()), ..r("c") });
+        insert(&db, NoteRow { date: Some("2025-01-15".into()), ..r("a") });
+        insert(&db, NoteRow { date: Some("2025-02-10".into()), ..r("b") });
+        insert(&db, NoteRow { ..r("no_date") });
+
+        assert_eq!(names(&db, "order by date desc"), vec!["c", "b", "a", "no_date"]);
+    }
+
+    #[test]
+    fn order_by_priority_high_first() {
+        let db = Db::new();
+        insert(&db, NoteRow { priority: Some("low".into()),    ..r("low") });
+        insert(&db, NoteRow { priority: Some("high".into()),   ..r("high") });
+        insert(&db, NoteRow { priority: Some("medium".into()), ..r("medium") });
+        insert(&db, NoteRow { ..r("none") });
+
+        assert_eq!(names(&db, "order by priority"), vec!["high", "medium", "low", "none"]);
+    }
+
+    #[test]
+    fn order_by_rating_desc_none_last() {
+        // None always sorts last, even in descending order
+        let db = Db::new();
+        insert(&db, NoteRow { rating: Some(3), ..r("three") });
+        insert(&db, NoteRow { rating: Some(5), ..r("five") });
+        insert(&db, NoteRow { rating: Some(4), ..r("four") });
+        insert(&db, NoteRow { ..r("none") });
+
+        assert_eq!(names(&db, "order by rating desc"), vec!["five", "four", "three", "none"]);
+    }
+
+    #[test]
+    fn order_by_priority_desc_none_last() {
+        let db = Db::new();
+        insert(&db, NoteRow { priority: Some("high".into()),   ..r("high") });
+        insert(&db, NoteRow { priority: Some("medium".into()), ..r("medium") });
+        insert(&db, NoteRow { priority: Some("low".into()),    ..r("low") });
+        insert(&db, NoteRow { ..r("none") });
+
+        // desc: low first, then medium, high, None last
+        assert_eq!(names(&db, "order by priority desc"), vec!["low", "medium", "high", "none"]);
+    }
+
+    #[test]
+    fn order_by_modified_asc() {
+        let db = Db::new();
+        insert(&db, NoteRow { modified_at: 30, ..r("c") });
+        insert(&db, NoteRow { modified_at: 10, ..r("a") });
+        insert(&db, NoteRow { modified_at: 20, ..r("b") });
+
+        assert_eq!(names(&db, "order by modified"), vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn order_by_without_direction_defaults_to_asc() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("z") });
+        insert(&db, NoteRow { ..r("a") });
+        insert(&db, NoteRow { ..r("m") });
+
+        assert_eq!(names(&db, "order by name"), vec!["a", "m", "z"]);
+    }
+
+    // ── recent + order by combination ─────────────────────────────────────────
+
+    #[test]
+    fn recent_then_order_by_re_sorts() {
+        // recent:2 picks the 2 newest, then order by name re-sorts them
+        let db = Db::new();
+        insert(&db, NoteRow { modified_at: 3, ..r("charlie") });
+        insert(&db, NoteRow { modified_at: 1, ..r("alpha") });
+        insert(&db, NoteRow { modified_at: 2, ..r("beta") });
+
+        // recent:2 → charlie(3), beta(2); order by name → beta, charlie
+        assert_eq!(names(&db, "recent:2 order by name"), vec!["beta", "charlie"]);
+    }
+
+    // ── Complex combinations ──────────────────────────────────────────────────
+
+    #[test]
+    fn tag_status_order_combined() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("active".into()), modified_at: 2, ..r("b") });
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("active".into()), modified_at: 1, ..r("a") });
+        insert(&db, NoteRow { tags: vec!["work".into()], status: Some("done".into()),   modified_at: 3, ..r("c") });
+        insert(&db, NoteRow { tags: vec!["other".into()], status: Some("active".into()), ..r("d") });
+
+        assert_eq!(names(&db, "#work status:active order by name"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn tag_and_date_filter() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["journal".into()], date: Some("2025-01-10".into()), ..r("jan") });
+        insert(&db, NoteRow { tags: vec!["journal".into()], date: Some("2025-02-15".into()), ..r("feb") });
+        insert(&db, NoteRow { tags: vec!["meeting".into()], date: Some("2025-01-05".into()), ..r("mtg") });
+
+        assert_eq!(sorted_names(&db, "#journal date:2025-01"), vec!["jan"]);
+    }
+
+    #[test]
+    fn or_groups_with_not_and_order() {
+        let db = Db::new();
+        insert(&db, NoteRow { tags: vec!["work".into()],     status: Some("active".into()), ..r("wa") });
+        insert(&db, NoteRow { tags: vec!["work".into()],     status: Some("done".into()),   ..r("wd") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], status: Some("active".into()), ..r("pa") });
+        insert(&db, NoteRow { tags: vec!["personal".into()], status: Some("done".into()),   ..r("pd") });
+
+        // (#work OR #personal) AND NOT status:done → wa and pa
+        assert_eq!(names(&db, "#work OR #personal NOT status:done order by name"), vec!["pa", "wa"]);
+    }
+
+    // ── Edge cases ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn invalid_rating_token_silently_ignored() {
+        // parser does `Err(_) => continue` → predicate discarded → all notes pass
+        let db = Db::new();
+        insert(&db, NoteRow { rating: Some(5), ..r("a") });
+        insert(&db, NoteRow { ..r("b") });
+
+        assert_eq!(sorted_names(&db, "rating:not_a_number"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn unknown_key_value_silently_ignored() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("a") });
+        insert(&db, NoteRow { ..r("b") });
+
+        assert_eq!(sorted_names(&db, "unknownfield:value"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn invalid_depth_token_silently_ignored() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("a") });
+
+        assert_eq!(sorted_names(&db, "depth:notanumber"), vec!["a"]);
+    }
+
+    #[test]
+    fn not_pinned_true_equivalent_to_pinned_false() {
+        let db = Db::new();
+        insert(&db, NoteRow { pinned: true,  ..r("pinned") });
+        insert(&db, NoteRow { pinned: false, ..r("unpinned") });
+
+        assert_eq!(sorted_names(&db, "NOT pinned:true"),  vec!["unpinned"]);
+        assert_eq!(sorted_names(&db, "NOT pinned:false"), vec!["pinned"]);
+    }
+
+    #[test]
+    fn whitespace_only_query_returns_all() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("a") });
+        insert(&db, NoteRow { ..r("b") });
+
+        assert_eq!(names(&db, "   "), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn bare_word_case_insensitive() {
+        let db = Db::new();
+        insert(&db, NoteRow { ..r("Meeting Notes") });
+        insert(&db, NoteRow { ..r("other") });
+
+        assert_eq!(sorted_names(&db, "MEETING"), vec!["Meeting Notes"]);
+    }
+
+    #[test]
+    fn status_is_case_sensitive() {
+        // status: uses exact match, no lowercasing
+        let db = Db::new();
+        insert(&db, NoteRow { status: Some("Active".into()), ..r("a") });
+        insert(&db, NoteRow { status: Some("active".into()), ..r("b") });
+
+        assert_eq!(sorted_names(&db, "status:active"), vec!["b"]);
+        assert_eq!(sorted_names(&db, "status:Active"), vec!["a"]);
+    }
 }

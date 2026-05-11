@@ -80,11 +80,18 @@
 	onMount(() => {
 		const onAuthExpired = () => { loggedIn = false; };
 		window.addEventListener('auth:expired', onAuthExpired);
+		return () => window.removeEventListener('auth:expired', onAuthExpired);
+	});
 
-		if (!loggedIn) return () => { window.removeEventListener('auth:expired', onAuthExpired); };
+	// Runs immediately if already logged in, or re-runs after login.
+	// onMount alone is not enough: when a user logs in, onMount has already
+	// finished and the wiki-navigate listener (and other setup) would never fire.
+	$effect(() => {
+		if (!loggedIn) return;
 
-		currentTheme = loadTheme();
-		applyTheme(currentTheme);
+		const theme = loadTheme();
+		currentTheme = theme;
+		applyTheme(theme);
 
 		Promise.all([listNotes(), getSettings()]).then(([n, raw]) => {
 			notes = n;
@@ -99,7 +106,6 @@
 		const handler = (e: Event) => {
 			const target = (e as CustomEvent<string>).detail;
 			if (!target) return;
-			// Exact match first, then basename fallback for notes in sub-folders
 			const exact = notes.find(n => n.name === target);
 			const resolved = exact
 				?? notes.find(n => n.name.split('/').pop() === target)
@@ -108,14 +114,12 @@
 		};
 		document.addEventListener('wiki-navigate', handler);
 
-		// Mobile detection
 		const mq = window.matchMedia('(max-width: 640px)');
 		isMobile = mq.matches;
 		const mqHandler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
 		mq.addEventListener('change', mqHandler);
 
 		return () => {
-			window.removeEventListener('auth:expired', onAuthExpired);
 			document.removeEventListener('wiki-navigate', handler);
 			mq.removeEventListener('change', mqHandler);
 		};
@@ -276,7 +280,7 @@
 <svelte:window onkeydown={onGlobalKeydown} />
 
 {#if !loggedIn}
-	<LoginPage onLogin={() => { loggedIn = true; listNotes().then(n => (notes = n)); }} />
+	<LoginPage onLogin={() => { loggedIn = true; }} />
 {:else}
 
 {#if settingsOpen}

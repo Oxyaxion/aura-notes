@@ -4,11 +4,17 @@ import Suggestion, {
 	type SuggestionProps,
 	type SuggestionKeyDownProps,
 } from '@tiptap/suggestion';
-import { PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import type { Editor, Range } from '@tiptap/core';
 
 const SlashCommandKey = new PluginKey('slashCommand');
+const SlashInputTrackerKey = new PluginKey('slashInputTracker');
+
+// True only when the last transaction was an actual edit (character typed).
+// Prevents the slash-command menu from opening when the cursor is merely
+// moved to an existing '/' via mouse click or arrow keys.
+let docJustChanged = false;
 
 export interface CommandItem {
 	title: string;
@@ -405,9 +411,21 @@ export const SlashCommand = Extension.create({
 
 	addProseMirrorPlugins() {
 		return [
+			// Registered first so docJustChanged is set before Suggestion's allow() runs.
+			new Plugin({
+				key: SlashInputTrackerKey,
+				state: {
+					init: () => false,
+					apply: (tr) => {
+						docJustChanged = tr.docChanged;
+						return tr.docChanged;
+					},
+				},
+			}),
 			Suggestion({
 				editor: this.editor,
 				...this.options.suggestion,
+				allow: () => docJustChanged,
 			}),
 		];
 	},
