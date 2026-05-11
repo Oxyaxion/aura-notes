@@ -16,6 +16,8 @@
 - Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}`. Results update in real time, a really cool feature.
 - API to queries from the CLI (`scripts/an`).
 - Keyboard-first: `/` for blocks, `Ctrl+K` for commands.
+- Emoji shortcodes: type `:smile:` → 😊, `:rocket:` → 🚀, 80+ shortcodes built-in.
+- Configurable date format (European, ISO, American, Full) for `/date` and `/timestamp`.
 
 ## Try the demo
 
@@ -259,6 +261,7 @@ area:pro type:meeting print title date     → meetings with only title and date
 |----------------|-------------------------------|
 | `/`            | Open slash-command menu       |
 | `[[`           | Start a WikiLink              |
+| `:shortcode:`  | Insert emoji (`:smile:` → 😊) |
 | `Ctrl+S`       | Save (auto-save also active)  |
 | `Ctrl+B/I`     | Bold / Italic                 |
 | `Ctrl+Z`       | Undo                          |

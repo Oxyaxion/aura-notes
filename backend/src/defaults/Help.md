@@ -321,7 +321,55 @@ locked:true order by lastModified    → locked notes, most recently saved first
 | `/` | Block menu (headings, lists, code, query…) |
 | `/?` | Insert a dynamic query block directly |
 | `[[` | Wiki link to another note |
+| `:shortcode:` | Insert emoji — `:smile:` → 😊, `:rocket:` → 🚀 |
 | `Ctrl+Enter` | Exit current blockquote or code block |
 | `Ctrl+S` | Save (auto-save is also active) |
 | `Ctrl+B / I` | Bold / Italic |
 | `Ctrl+Z` | Undo |
+
+---
+
+## Emoji Shortcodes
+
+Type `:shortcode:` anywhere in the editor and it is replaced automatically when you close it with `:`.
+
+You can also search shortcodes via the `/` slash-command menu (type `/smile` for example).
+
+**Smileys & faces**
+
+| Shortcode | Emoji | | Shortcode | Emoji |
+| --- | --- | --- | --- | --- |
+| `:smile:` | 😊 | | `:grin:` | 😁 |
+| `:laughing:` | 😆 | | `:joy:` | 😂 |
+| `:wink:` | 😉 | | `:heart_eyes:` | 😍 |
+| `:thinking:` | 🤔 | | `:cry:` | 😢 |
+| `:angry:` | 😠 | | `:scream:` | 😱 |
+| `:cool:` | 😎 | | `:nerd:` | 🤓 |
+| `:partying:` | 🥳 | | `:sleeping:` | 😴 |
+| `:ghost:` | 👻 | | `:robot:` | 🤖 |
+
+**Status & actions**
+
+| Shortcode | Emoji | | Shortcode | Emoji |
+| --- | --- | --- | --- | --- |
+| `:check:` / `:done:` | ✅ | | `:x:` / `:no:` | ❌ |
+| `:warning:` | ⚠️ | | `:question:` | ❓ |
+| `:bulb:` / `:idea:` | 💡 | | `:fire:` | 🔥 |
+| `:rocket:` | 🚀 | | `:star:` | ⭐ |
+| `:tada:` / `:party:` | 🎉 | | `:trophy:` | 🏆 |
+| `:heart:` | ❤️ | | `:thumbsup:` | 👍 |
+| `:bug:` | 🐛 | | `:zap:` | ⚡ |
+| `:clock:` | ⏰ | | `:calendar:` | 📅 |
+
+---
+
+## Date Format
+
+The format used by `/date` and `/timestamp` can be configured in **Settings → General → Date format**:
+
+| Option | Example |
+| --- | --- |
+| Full | Wednesday, December 25, 2025 |
+| European | 25/12/2025 |
+| ISO | 2025-12-25 |
+| American | 12/25/2025 |
