@@ -2,22 +2,19 @@
   <img src="clef-note-logo.png" alt="Clef Note" width="200" />
   <h1>Clef Note</h1>
   <p><em>A lightweight, fast, queryable, keyboard-oriented markdown note-taking app with a minimal footprint.</em></p>
-  <img src="clef-note.png" alt="Clef Note screenshot" width="800" />
 </div>
 
 <br />
 
 - Self-hosted, WYSIWYG editor, note-taking backed by plain `.md` files with frontmatter, no database, no lock-in.
 - Move your `storage/` folder anywhere, open notes in any editor.
-- One binary, ~15 MB, no Node.js in production.
+- Clean and minimal UI.
+- Keyboard-first: `/` for blocks, `Ctrl+K` for commands.
+- Minimal footprint : one binary, ~15 MB, no Node.js in production.
+- Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}` : Results update in real time.
 - All the modern features : Export notes / Copy Paste images / Excalidraw ...
 - Responsive for smartphone.
-- Minimal UI.
-- Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}`. Results update in real time, a really cool feature.
 - API to queries from the CLI (`scripts/an`).
-- Keyboard-first: `/` for blocks, `Ctrl+K` for commands.
-- Emoji shortcodes: type `:smile:` → 😊, `:rocket:` → 🚀, 80+ shortcodes built-in.
-- Configurable date format (European, ISO, American, Full) for `/date` and `/timestamp`.
 
 ## Try the demo
 
