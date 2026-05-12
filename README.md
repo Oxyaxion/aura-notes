@@ -9,8 +9,8 @@
 - Self-hosted, WYSIWYG editor, note-taking backed by plain `.md` files with frontmatter, no database, no lock-in.
 - Move your `storage/` folder anywhere, open notes in any editor.
 - Clean and minimal UI.
-- Minimal footprint : one binary, ~15 MB, no Node.js in production.
-- Blazing fast search and even with thousands of notes
+- Minimal footprint : one binary, ~15 MB on disk and just a few dozen megabytes of RAM for 5000 notes.
+- Blazing fast search even with thousands of notes.
 - Keyboard-first: `/` for blocks, `Ctrl+K` for commands.
 - Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}` : Results update in real time.
 - All the modern features : Export notes / Copy Paste images / Excalidraw ...
