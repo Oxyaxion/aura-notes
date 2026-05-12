@@ -14,7 +14,9 @@
 - Write live query blocks directly in your notes: `{area:pro status:active order by priority}`, `{path:Work/ depth:2 order by name and not project print name}` : Results update in real time.
 - All the modern features : Export notes / Copy Paste images / Excalidraw ...
 - Responsive for smartphone.
+- Read only mode.
 - API to queries from the CLI (`scripts/an`).
+- OpenAI compatible endpoint to plug with an LLM.
 
 ## Try the demo
 
